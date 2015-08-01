@@ -20,4 +20,4 @@ This Is An Asynchronous Interface To Use Functions in The Qt5 SQL Module
 + That is why I provide many synchronous functions , that behave exactly the same as the qt equivalents (as they just call them in the database thread behind the
   scenes).
 
-+ Better Readme coming soon, feel free to contact me for more information
++ Better Readme coming soon, feel free to contact me ( micjabbour@gmail.com ) for more information
