@@ -50,7 +50,7 @@ void MSqlQuery::bindValue(const QString &placeholder, const QVariant &val, QSql:
                               Q_ARG(QSql::ParamType, paramType));
 }
 
-bool MSqlQuery::asyncExec(const QString &query)
+bool MSqlQuery::execAsync(const QString &query)
 {
     if(m_isBusy) return false;
     m_isBusy = true;
@@ -62,7 +62,7 @@ bool MSqlQuery::asyncExec(const QString &query)
     return true;
 }
 
-bool MSqlQuery::asyncExec()
+bool MSqlQuery::execAsync()
 {
     if(m_isBusy) return false;
     m_isBusy = true;
@@ -75,6 +75,7 @@ bool MSqlQuery::asyncExec()
 
 bool MSqlQuery::exec(const QString &query)
 {
+    //TODO: make exec fully sync using BlockingQueuedConnection call
     while(m_isBusy) //wait until this object is not busy executing other queries
     {
         QEventLoop loop;
@@ -84,7 +85,7 @@ bool MSqlQuery::exec(const QString &query)
     //call the equivalent async function
     QEventLoop loop;
     connect(this, SIGNAL(gotResponseFromOtherThread()), &loop, SLOT(quit()));
-    asyncExec(query);
+    execAsync(query);
     shouldEmitGotResult = false;
     loop.exec(QEventLoop::ExcludeUserInputEvents); //wait for the query to finish
     shouldEmitGotResult = true;
@@ -109,7 +110,7 @@ bool MSqlQuery::exec()
     //call the equivalent async function
     QEventLoop loop;
     connect(this, SIGNAL(gotResponseFromOtherThread()), &loop, SLOT(quit()));
-    asyncExec();
+    execAsync();
     shouldEmitGotResult = false;
     loop.exec(QEventLoop::ExcludeUserInputEvents); //wait for the query to finish
     shouldEmitGotResult = true;

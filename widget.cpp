@@ -2,27 +2,17 @@
 #include "ui_widget.h"
 #include "msqlquery.h"
 #include "msqlquerymodel.h"
+#include <QMessageBox>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
-    MSqlDatabase mdb = MSqlDatabase::addDatabase("QPSQL");
-    mdb.setHostName("192.168.5.5");
-    mdb.setDatabaseName("PlaySyDb");
-    mdb.setUserName("postgres");
-    mdb.setPassword("123456");
-    mdb.setConnectionOptions("requiressl=1");
-    if(!mdb.open())
-    {
-        qCritical("no connection, disabling ssl. . .");
-        mdb.setConnectionOptions();
-        if(!mdb.open())
-        {
-            qCritical("no connection after disabling ssl");
-        }
-    }
+    //if you want to use an async query, you should make sure that 
+    //the MSqlQuery or MSqlQueryModel are allocated in manner that preserves
+    //their lifetime while a query is running
+    //(so that they can emit a signal when the query executes)
     mquery= new MSqlQuery(this);
     connect(mquery, SIGNAL(gotResults(bool)), this, SLOT(GotResult()));
     model = new MSqlQueryModel(this);
@@ -49,11 +39,24 @@ void Widget::GotResult()
     }
 }
 
-void Widget::on_pushButton_clicked()
+void Widget::on_pbSetModelQuery_clicked()
 {
-    /*if(!mquery->asyncExec(ui->lineEdit->text()))
+    model->setQueryAsync(ui->lineEdit_2->text());
+}
+
+void Widget::on_pbAsyncExecQuery_clicked()
+{
+    if(!mquery->execAsync(ui->lineEdit->text()))
     {
-        qCritical("asyncExec returned false");
+        qCritical("execAsync returned false");
+    }
+}
+
+void Widget::on_pbExecQuery_clicked()
+{
+    /*if(!mquery->execAsync(ui->lineEdit->text()))
+    {
+        qCritical("execAsync returned false");
     }*/
     MSqlQuery mquery;
     if(!mquery.exec(ui->lineEdit->text()))
@@ -67,17 +70,4 @@ void Widget::on_pushButton_clicked()
         qDebug("%d %s", i, mquery.record().value(0).toString().toLocal8Bit().data());
         i++;
     }
-}
-
-void Widget::on_pushButton_2_clicked()
-{
-    if(!mquery->asyncExec(ui->lineEdit->text()))
-    {
-            qCritical("asyncExec returned false");
-    }
-}
-
-void Widget::on_pushButton_3_clicked()
-{
-    model->setQuery(ui->lineEdit_2->text());
 }

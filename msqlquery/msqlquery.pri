@@ -1,11 +1,9 @@
-QT       += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-QT       += sql
+QT       += core sql
 
 
 INCLUDEPATH += $$PWD
 
+DEFINES += M_SQL_QUERY_DEBUG
 
 SOURCES += $$PWD/mdbworker.cpp \
     $$PWD/msqldatabase.cpp \

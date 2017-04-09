@@ -27,8 +27,8 @@ public:
     QSqlRecord record();
     bool isSuccess()const{return lastSuccess;}
     bool isBusy()const{return m_isBusy;}
-    bool asyncExec(const QString& query); //the async version (returns immediately, sets the object to busy, returns false and fails when busy)
-    bool asyncExec();
+    bool execAsync(const QString& query); //the async version (returns immediately, sets the object to busy, returns false and fails when busy)
+    bool execAsync();
     QString getDbConnectionName()const{return db.connectionName();}
     QVariant lastInsertId()const;
 signals:
@@ -37,6 +37,7 @@ signals:
 public slots:
     void setResults(const QList<QSqlRecord>& res, bool success); //set isBusy to false, and emits gotResults signal
 private:
+    
     MSqlDatabase db;
     QSqlQuery* qquery;
     bool m_isBusy;

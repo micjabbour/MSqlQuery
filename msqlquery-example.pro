@@ -7,23 +7,15 @@
 QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-QT       += sql
+include(msqlquery/msqlquery.pri)
 
-TARGET = msqlquery
+TARGET = msqlquery-example
 TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        widget.cpp \
-    mdbworker.cpp \
-    msqldatabase.cpp \
-    msqlquery.cpp \
-    msqlquerymodel.cpp
+        widget.cpp
 
-HEADERS  += widget.h \
-    mdbworker.h \
-    msqldatabase.h \
-    msqlquery.h \
-    msqlquerymodel.h
+HEADERS  += widget.h  
 
 FORMS    += widget.ui
