@@ -8,8 +8,7 @@
 
 class QSqlQuery;
 
-class MSqlQuery : public QObject
-{
+class MSqlQuery : public QObject {
     Q_OBJECT
 public:
     explicit MSqlQuery(QObject *parent = 0, MSqlDatabase db = MSqlDatabase::database());
@@ -37,7 +36,17 @@ signals:
 public slots:
     void setResults(const QList<QSqlRecord>& res, bool success); //set isBusy to false, and emits gotResults signal
 private:
-    
+    //the worker object that lives in the database connection's thread and owns the QSqlQuery instance
+    class MSqlQueryWorker : public QObject {
+    public:
+        explicit MSqlQueryWorker(QObject* parent= nullptr);
+        ~MSqlQueryWorker() { delete q; }
+        QSqlQuery* q; //accessed only from worker threads
+    };
+
+    //pointer accessed only from the client thread
+    //passed to worker threads through lambdas capturing it by value, lives in database connection thread
+    MSqlQueryWorker* w;
     MSqlDatabase db;
     QSqlQuery* qquery;
     bool m_isBusy;

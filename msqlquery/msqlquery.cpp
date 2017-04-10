@@ -2,52 +2,47 @@
 #include "mdbworker.h"
 #include <QEventLoop>
 #include <QCoreApplication>
+#include "qthreadutils.h"
+#include "msqlthread.h"
 
-
-MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db) : QObject(parent), db(db), m_isBusy(false), currentItem(-1), lastSuccess(true), shouldEmitGotResult(true)
-{
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CreateNewQSqlQuery",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QSqlQuery* , qquery),
-                              Q_ARG(QString, db.connectionName()));
-    
+MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
+    : QObject(parent), db(db), m_isBusy(false), currentItem(-1), lastSuccess(true),
+      shouldEmitGotResult(true) {
+    w= new MSqlQueryWorker();
+    w->moveToThread(MSqlThread::instance());
+    auto w= this->w; //in order to capture w by value
+    //   ^^^^^^^^^^ is there a better way to do this without using c++14 initializing capture??
+    //TODO: make sure slots invocation order in the target thread matches signal emitting order
+    PostToWorker(w, [=]{
+        w->q = new QSqlQuery(db.connectionName());
+    });
 }
 
-MSqlQuery::~MSqlQuery()
-{
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "DeleteQSqlQuery",
-                              Qt::QueuedConnection,
-                              Q_ARG(QSqlQuery*, qquery));
+MSqlQuery::~MSqlQuery() {
+    w->deleteLater();
 }
 
-bool MSqlQuery::prepare(const QString &query)
-{
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlQueryPrepare",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QSqlQuery* , qquery),
-                              Q_ARG(QString, query));
-    return result;
+bool MSqlQuery::prepare(const QString &query) {
+    auto w= this->w; //in order to capture w by value
+    return CallByWorker(w, [=]{
+        return w->q->prepare(query);
+    });
 }
 
 void MSqlQuery::addBindValue(const QVariant &val, QSql::ParamType paramType)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlQueryAddBindValue",
-                              Qt::QueuedConnection,
-                              Q_ARG(QSqlQuery*, qquery),
-                              Q_ARG(QVariant, val),
-                              Q_ARG(QSql::ParamType, paramType));
+    auto w= this->w; //in order to capture w by value
+    PostToWorker(w, [=]{
+        w->q->addBindValue(val, paramType);
+    });
 }
 
 void MSqlQuery::bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlQueryBindValue",
-                              Qt::QueuedConnection,
-                              Q_ARG(QSqlQuery*, qquery),
-                              Q_ARG(QString, placeholder),
-                              Q_ARG(QVariant, val),
-                              Q_ARG(QSql::ParamType, paramType));
+    auto w= this->w;
+    PostToWorker(w, [=]{
+        w->q->bindValue(placeholder, val, paramType);
+    });
 }
 
 bool MSqlQuery::execAsync(const QString &query)
