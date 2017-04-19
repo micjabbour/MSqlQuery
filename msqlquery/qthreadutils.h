@@ -45,4 +45,13 @@ CallByWorker(QObject* worker, Func&& f) {
                 Qt::DirectConnection : Qt::BlockingQueuedConnection;
     PostToWorker(worker, std::forward<Func>(f), blockingConnectionType);
 }
+
+//overload for methods/slots
+//the slot gets invoked in the thread where the QObject lives
+template <typename Object, typename T>
+void InvokeLater(Object* object, T (Object::* f)()){
+    QObject signalSource;
+    QObject::connect(&signalSource, &QObject::destroyed,
+                     object, f, Qt::QueuedConnection);
+}
 #endif // QTHREADUTILS_H
