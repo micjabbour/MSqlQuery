@@ -48,8 +48,11 @@ CallByWorker(QObject* worker, Func&& f) {
 
 //overload for methods/slots
 //the slot gets invoked in the thread where the QObject lives
-template <typename Object, typename T>
-void InvokeLater(Object* object, T (Object::* f)()){
+template <typename Object, typename Ret, typename T,
+          typename = typename std::enable_if<std::is_base_of<QObject, Object>::value&&
+                                    std::is_base_of<QObject, T>::value>::type
+          >
+void InvokeLater(Object* object, Ret (T::* f)()){
     QObject signalSource;
     QObject::connect(&signalSource, &QObject::destroyed,
                      object, f, Qt::QueuedConnection);

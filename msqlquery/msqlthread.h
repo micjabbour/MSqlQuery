@@ -2,6 +2,7 @@
 #define MSQLTHREAD_H
 
 #include <QObject>
+#include <QThread>
 
 //a thread that can be destroyed at any time
 //see http://stackoverflow.com/a/25230470
@@ -21,6 +22,10 @@ public:
     ~MSqlThread() {}
 
     static MSqlThread* instance();
+
+    QObject* getWorker(){ return m_worker; }
+private:
+    QObject* m_worker;
 };
 
 #endif // MSQLTHREAD_H

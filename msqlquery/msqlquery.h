@@ -10,19 +10,19 @@
 class QSqlQuery;
 class MSqlQueryWorker;
 
+//all functions in this class do NOT block EXCEPT the exec() function
+//use execAsync() and connect to resultsReady() signal instead
 class MSqlQuery : public QObject {
     Q_OBJECT
 public:
     explicit MSqlQuery(QObject *parent = 0, MSqlDatabase db = MSqlDatabase::database());
     ~MSqlQuery();
-    
+    //an interface similar to QSqlQuery
     void prepare(const QString& query);
     void addBindValue(const QVariant& val, QSql::ParamType paramType = QSql::In);
     void bindValue(const QString& placeholder, const QVariant& val, QSql::ParamType paramType = QSql::In);
-    
     bool exec(const QString& query);
     bool exec();
-    
     bool next();
     bool seek(int index);
     QSqlRecord record() const;
@@ -31,6 +31,10 @@ public:
     void execAsync();
     QString getDbConnectionName()const{return db.connectionName();}
     QVariant lastInsertId()const;
+
+    //additional functions
+    bool isBusy()const;
+    QList<QSqlRecord> getAllRecords() const;
 signals:
     void resultsReady(bool success);
     void busyToggled(bool isBusy);
@@ -41,6 +45,7 @@ private:
     //passed to worker threads through lambdas capturing it by value, lives in database connection thread
     MSqlQueryWorker* w;
     MSqlDatabase db;
+    bool m_isBusy = false; //accessed only from client thread
 };
 
 //the worker object lives in the database connection's thread and owns the QSqlQuery instance
@@ -54,9 +59,8 @@ public:
     using PositionalBind = std::tuple<QVariant, QSql::ParamType>;
 
     explicit MSqlQueryWorker():QObject(nullptr){} //worker does not have a parent
-    ~MSqlQueryWorker() { delete q; }
+    ~MSqlQueryWorker();
     QSqlQuery* q; //accessed only from worker threads
-
     //the following functions are thread-safe
     void prepare(const QString &query);
     void bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType);
@@ -70,6 +74,7 @@ public:
     void setNextQueryReady(bool isReady);
     bool isBusy() const;
     bool hasNextQuery() const;
+    QList<QSqlRecord> getAllRecords() const;
 
     Q_SIGNAL void resultsReady(bool success);
     Q_INVOKABLE void execNextQuery(); //always invoked in worker thread

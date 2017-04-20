@@ -54,23 +54,11 @@ public:
     //! It just calls QSqlQueryModel::setQuery from the other thread. and blocks until the query finishes.
     Q_INVOKABLE void setQuery(const QString& query,  const QString& dbConnectionName = MSqlDatabase::defaultConnectionName);
     
-signals:
-    
-public slots:
-
-    
 private slots:
     void queryGotResults(bool success);
 private:
-    void HandleQuery(MSqlQuery* query);
-    void HandleQueryFromStr(const QString& query, const QString& dbConnectionName= MSqlDatabase::defaultConnectionName);
-    
-    
     MSqlQuery* m_query;
-    QList<QSqlRecord> m_recList;
-    QString m_nextQueryToExecute;
-    QString m_nextQueryDbConnectionName;
-    MSqlQuery* m_nextMQueryToExecute;
+    QList<QSqlRecord> m_records;
 };
 
 #endif // MSQLQUERYMODEL_H

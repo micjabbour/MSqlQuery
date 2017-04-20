@@ -1,15 +1,12 @@
 #include "msqlquery.h"
-#include "mdbworker.h"
-#include <QEventLoop>
-#include <QCoreApplication>
 #include "qthreadutils.h"
 #include "msqlthread.h"
 #include "msqldatabase.h"
 #include <QMutexLocker>
+#include <QSqlQuery>
 
 MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
-    : QObject(parent), db(db), m_isBusy(false), currentItem(-1), lastSuccess(true),
-      shouldEmitGotResult(true) {
+    : QObject(parent), db(db) {
     w= new MSqlQueryWorker();
     //connect func from worker to this instance's signal
     //this will make the signal get emitted from the MSqlQuery thread (instead of the worker thread)
@@ -30,18 +27,15 @@ void MSqlQuery::prepare(const QString &query) {
     w->prepare(query);
 }
 
-void MSqlQuery::addBindValue(const QVariant &val, QSql::ParamType paramType)
-{
+void MSqlQuery::addBindValue(const QVariant &val, QSql::ParamType paramType) {
     w->addBindValue(val, paramType);
 }
 
-void MSqlQuery::bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType)
-{
+void MSqlQuery::bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType) {
     w->bindValue(placeholder, val, paramType);
 }
 
-void MSqlQuery::execAsync(const QString &query)
-{
+void MSqlQuery::execAsync(const QString &query) {
     w->prepare(query);
     execAsync();
 }
@@ -49,17 +43,16 @@ void MSqlQuery::execAsync(const QString &query)
 void MSqlQuery::execAsync()
 {
     w->execAsync();
+    m_isBusy = true;
     emit busyToggled(true);
 }
 
-bool MSqlQuery::exec(const QString &query)
-{
+bool MSqlQuery::exec(const QString &query) {
     w->prepare(query);
-    exec();
+    return exec();
 }
 
-bool MSqlQuery::exec()
-{
+bool MSqlQuery::exec() {
     w->setNextQueryReady(true);
     //block signals when using sync API ( blockSignals(true) is not thread-safe )
     disconnect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
@@ -72,13 +65,11 @@ bool MSqlQuery::exec()
     return success;
 }
 
-bool MSqlQuery::next()
-{
+bool MSqlQuery::next() {
     return w->next();
 }
 
-QSqlRecord MSqlQuery::record() const
-{
+QSqlRecord MSqlQuery::record() const {
     return w->record();
 }
 
@@ -91,9 +82,16 @@ bool MSqlQuery::seek(int index)
     return w->seek(index);
 }
 
-QVariant MSqlQuery::lastInsertId()const
-{
+QVariant MSqlQuery::lastInsertId() const {
     return w->lastInsertId();
+}
+
+bool MSqlQuery::isBusy() const {
+    return m_isBusy;
+}
+
+QList<QSqlRecord> MSqlQuery::getAllRecords() const {
+    return w->getAllRecords();
 }
 
 void MSqlQuery::workerFinished(bool success) {
@@ -102,9 +100,14 @@ void MSqlQuery::workerFinished(bool success) {
         //and when the worker is not currently executing any query
         //because otherwise the current query wouldn't be interesting for the user
         //and should have been cancelled
+        m_isBusy = false;
         emit resultsReady(success);
         emit busyToggled(false);
     }
+}
+
+MSqlQueryWorker::~MSqlQueryWorker() {
+    delete q;
 }
 
 void MSqlQueryWorker::prepare(const QString &query) {
@@ -222,6 +225,12 @@ bool MSqlQueryWorker::hasNextQuery() const {
     QMutexLocker locker(&mutex);
     Q_UNUSED(locker)
     return m_nextQuery.isReady;
+}
+
+QList<QSqlRecord> MSqlQueryWorker::getAllRecords() const {
+    QMutexLocker locker(&mutex);
+    Q_UNUSED(locker)
+    return m_records;
 }
 
 bool MSqlQueryWorker::isBusy() const {

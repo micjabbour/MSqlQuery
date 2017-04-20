@@ -5,7 +5,7 @@
 
 class QSqlDriver;
 class QObject;
-class QThread;
+class MSqlThread;
 
 class MSqlDatabase //provides an interface similar to QSqlDatabase except that all connections are created in the MDbThread
 {
@@ -40,7 +40,7 @@ public:
     
     //notifications support
     
-    //you can only connect signals from here, do not call any functions on the returned object directly
+    //you can only connect signals from here, do not call any functions on the returned QSqlDriver directly
     //as this has to be done from the database thread
     const QSqlDriver* driver(); 
     //use the following functions to subscribe/unsubscribe to/from notifications
@@ -55,8 +55,8 @@ public:
     bool isValid()const;
     static const QString defaultConnectionName;
 private:
-    static QThread* threadForConnection(QString connectionName)const;
-    static QObject* workerForConnection(QString connectionName)const;
+    static MSqlThread* threadForConnection(QString connectionName);
+    static QObject* workerForConnection(QString connectionName);
     MSqlDatabase();
     QString m_connectionName;
 };

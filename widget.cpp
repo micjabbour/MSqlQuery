@@ -3,6 +3,7 @@
 #include "msqlquery.h"
 #include "msqlquerymodel.h"
 #include <QMessageBox>
+#include <QDebug>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -13,10 +14,20 @@ Widget::Widget(QWidget *parent) :
     //the MSqlQuery or MSqlQueryModel are allocated in manner that preserves
     //their lifetime while a query is running
     //(so that they can emit a signal when the query executes)
-    mquery= new MSqlQuery(this);
-    connect(mquery, SIGNAL(gotResults(bool)), this, SLOT(GotResult()));
-    model = new MSqlQueryModel(this);
-    ui->tableView->setModel(model);
+    m_query= new MSqlQuery(this);
+    connect(m_query, &MSqlQuery::resultsReady, this, [=](bool success){
+        if(success) {
+            int i=0;
+            while(m_query->next()) {
+                qDebug() << i << " " << m_query->record().value(0).toString().toLatin1().constData();
+                i++;
+            }
+        } else {
+            qCritical("query failed");
+        }
+    });
+    m_model = new MSqlQueryModel(this);
+    ui->tableView->setModel(m_model);
 }
 
 Widget::~Widget()
@@ -24,50 +35,27 @@ Widget::~Widget()
     delete ui;
 }
 
-void Widget::GotResult()
-{
-    if(!mquery->isSuccess())
-    {
-        qCritical("mquery failed");
-        return;
-    }
-    int i=0;
-    while(mquery->next())
-    {
-        qDebug("%d %s", i, mquery->record().value(0).toString().toLocal8Bit().data());
-        i++;
-    }
-}
-
 void Widget::on_pbSetModelQuery_clicked()
 {
-    model->setQueryAsync(ui->lineEdit_2->text());
+    m_model->setQueryAsync(ui->lineEdit_2->text());
 }
 
 void Widget::on_pbAsyncExecQuery_clicked()
 {
-    if(!mquery->execAsync(ui->lineEdit->text()))
-    {
-        qCritical("execAsync returned false");
-    }
+    m_query->execAsync(ui->lineEdit->text());
 }
 
 void Widget::on_pbExecQuery_clicked()
 {
-    /*if(!mquery->execAsync(ui->lineEdit->text()))
-    {
-        qCritical("execAsync returned false");
-    }*/
-    MSqlQuery mquery;
-    if(!mquery.exec(ui->lineEdit->text()))
+    MSqlQuery query;
+    if(!query.exec(ui->lineEdit->text()))
     {
         qCritical("exec returned false!!");
         return;
     }
     int i=0;
-    while(mquery.next())
-    {
-        qDebug("%d %s", i, mquery.record().value(0).toString().toLocal8Bit().data());
+    while(query.next()) {
+        qDebug() << i << " " << query.record().value(0).toString().toLatin1().constData();
         i++;
     }
 }

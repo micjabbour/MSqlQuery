@@ -18,8 +18,6 @@ public:
     explicit Widget(QWidget *parent = 0);
     ~Widget();
     
-public slots:
-    void GotResult();
 private slots:
     void on_pbSetModelQuery_clicked();
     
@@ -29,8 +27,8 @@ private slots:
     
 private:
     Ui::Widget *ui;
-    MSqlQuery* mquery;
-    MSqlQueryModel* model;
+    MSqlQuery* m_query;
+    MSqlQueryModel* m_model;
 };
 
 #endif // WIDGET_H
