@@ -5,13 +5,13 @@ INCLUDEPATH += $$PWD
 
 DEFINES += M_SQL_QUERY_DEBUG
 
-SOURCES += $$PWD/mdbworker.cpp \
+SOURCES += \
     $$PWD/msqldatabase.cpp \
     $$PWD/msqlquery.cpp \
     $$PWD/msqlquerymodel.cpp \
     $$PWD/msqlthread.cpp
 
-HEADERS  += $$PWD/mdbworker.h \
+HEADERS  += \
     $$PWD/msqldatabase.h \
     $$PWD/msqlquery.h \
     $$PWD/msqlquerymodel.h \

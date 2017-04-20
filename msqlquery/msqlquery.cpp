@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include "qthreadutils.h"
 #include "msqlthread.h"
+#include "msqldatabase.h"
 #include <QMutexLocker>
 
 MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
@@ -12,8 +13,8 @@ MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
     w= new MSqlQueryWorker();
     //connect func from worker to this instance's signal
     //this will make the signal get emitted from the MSqlQuery thread (instead of the worker thread)
-    connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::resultsReady);
-    w->moveToThread(MSqlThread::instance());
+    connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
+    w->moveToThread(MSqlDatabase:: threadForConnection(db.connectionName()));
     auto w= this->w; //in order to capture w by value
     //   ^^^^^^^^^^ is there a better way to do this without using c++14 initializing capture??
     PostToWorker(w, [=]{
@@ -22,7 +23,7 @@ MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
 }
 
 MSqlQuery::~MSqlQuery() {
-    w->deleteLater();
+    InvokeLater(w, &QObject::deleteLater);
 }
 
 void MSqlQuery::prepare(const QString &query) {
@@ -42,12 +43,13 @@ void MSqlQuery::bindValue(const QString &placeholder, const QVariant &val, QSql:
 void MSqlQuery::execAsync(const QString &query)
 {
     w->prepare(query);
-    w->execAsync();
+    execAsync();
 }
 
 void MSqlQuery::execAsync()
 {
     w->execAsync();
+    emit busyToggled(true);
 }
 
 bool MSqlQuery::exec(const QString &query)
@@ -59,11 +61,13 @@ bool MSqlQuery::exec(const QString &query)
 bool MSqlQuery::exec()
 {
     w->setNextQueryReady(true);
+    //block signals when using sync API ( blockSignals(true) is not thread-safe )
+    disconnect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
     auto w= this->w; //in order to capture w by value
-    //TODO: find a way to block ready signal when using sync API
     CallByWorker(w, [=]{
         w->execNextQuery();
     });
+    connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
     bool success = w->lastError().type()==QSqlError::NoError;
     return success;
 }
@@ -78,6 +82,10 @@ QSqlRecord MSqlQuery::record() const
     return w->record();
 }
 
+QSqlError MSqlQuery::lastError() const {
+    return w->lastError();
+}
+
 bool MSqlQuery::seek(int index)
 {
     return w->seek(index);
@@ -86,6 +94,17 @@ bool MSqlQuery::seek(int index)
 QVariant MSqlQuery::lastInsertId()const
 {
     return w->lastInsertId();
+}
+
+void MSqlQuery::workerFinished(bool success) {
+    if(!(w->isBusy()||w->hasNextQuery())) {
+        //emit ready signal only when there are no scheduled queries
+        //and when the worker is not currently executing any query
+        //because otherwise the current query wouldn't be interesting for the user
+        //and should have been cancelled
+        emit resultsReady(success);
+        emit busyToggled(false);
+    }
 }
 
 void MSqlQueryWorker::prepare(const QString &query) {
@@ -115,13 +134,15 @@ void MSqlQueryWorker::execAsync() {
     QMutexLocker locker(&mutex);
     Q_UNUSED(locker)
     m_nextQuery.isReady = true;
+    m_records.clear();
+    m_currentItem = 0;
+    m_lastInsertId = QVariant();
+    m_lastError = QSqlError();
     InvokeLater(this, &MSqlQueryWorker::execNextQuery);
 }
 
 bool MSqlQueryWorker::next() {
     QMutexLocker locker(&mutex);
-    if(m_nextQuery.isReady)
-        return false; //another query is to be executed soon
     if(m_records.isEmpty()) return false;
     if(++m_currentItem >= m_records.size()) return false;
     return true;
@@ -129,8 +150,6 @@ bool MSqlQueryWorker::next() {
 
 bool MSqlQueryWorker::seek(int index) {
     QMutexLocker locker(&mutex);
-    if(m_nextQuery.isReady)
-        return false; //another query is to be executed soon
     if(index >= m_records.size()) {
         return false;
     } else {
@@ -159,37 +178,54 @@ QSqlError MSqlQueryWorker::lastError() const {
 
 void MSqlQueryWorker::execNextQuery() {
     QMutexLocker locker(&mutex);
+    if(!m_nextQuery.isReady) return; //if there is no query to execute
     //take out next query
     SqlQueryExec currentQuery = m_nextQuery;
     m_nextQuery.isReady = false;
+    m_isBusy = true;
     locker.unlock(); //unlock mutex
-    if(!currentQuery.isReady) return;
     q->clear();
     q->prepare(currentQuery.prepareStr);
     for(const auto& bind : currentQuery.placeHolderBinds)
         q->bindValue(std::get<0>(bind), std::get<1>(bind), std::get<2>(bind));
     for(const auto& bind : currentQuery.positionalBinds)
         q->addBindValue(std::get<0>(bind), std::get<1>(bind));
-    if(q->exec()) { //execute statement
-        locker.relock(); //lock mutex to store new records
+    bool result = q->exec(); //execute query
+    locker.relock(); //lock mutex to store new records
+    if(m_nextQuery.isReady) //if another query has been scheduled
+        return; //cancel current query (no need to store its results)
+    if(result) { //execute statement
         while(q->next()) m_records.append(q->record());
         m_currentItem = 0;
         m_lastInsertId = q->lastInsertId();
         m_lastError = QSqlError();
-        locker.unlock();
-        emit resultsReady(true);
+        m_isBusy = false;
     } else {
         locker.relock(); //lock mutex to store new error
         m_records.clear();
         m_currentItem = 0;
         m_lastInsertId = QVariant();
         m_lastError= q->lastError();
-        locker.unlock();
-        emit resultsReady(false);
+        m_isBusy = false;
     }
+    locker.unlock();
+    emit resultsReady(result);
 }
 
 void MSqlQueryWorker::setNextQueryReady(bool isReady) {
     QMutexLocker locker(&mutex);
+    Q_UNUSED(locker)
     m_nextQuery.isReady = isReady;
+}
+
+bool MSqlQueryWorker::hasNextQuery() const {
+    QMutexLocker locker(&mutex);
+    Q_UNUSED(locker)
+    return m_nextQuery.isReady;
+}
+
+bool MSqlQueryWorker::isBusy() const {
+    QMutexLocker locker(&mutex);
+    Q_UNUSED(locker)
+    return m_isBusy;
 }

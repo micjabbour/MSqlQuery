@@ -27,29 +27,20 @@ public:
     bool seek(int index);
     QSqlRecord record() const;
     QSqlError lastError() const;
-    bool isSuccess()const{return lastSuccess;}
-    bool isBusy()const{return m_isBusy;}
-    void execAsync(const QString& query); //the async version (returns immediately, overwrites next query in order to compress queries)
+    void execAsync(const QString& query);
     void execAsync();
     QString getDbConnectionName()const{return db.connectionName();}
     QVariant lastInsertId()const;
 signals:
     void resultsReady(bool success);
-public slots:
-    void setResults(const QList<QSqlRecord>& res, bool success); //set isBusy to false, and emits gotResults signal
+    void busyToggled(bool isBusy);
 private:
-
+    Q_INVOKABLE void workerFinished(bool success);
 
     //pointer accessed only from the client thread
     //passed to worker threads through lambdas capturing it by value, lives in database connection thread
     MSqlQueryWorker* w;
     MSqlDatabase db;
-    QSqlQuery* qquery;
-    bool m_isBusy;
-    QList<QSqlRecord> records;
-    int currentItem;
-    bool lastSuccess;
-    bool shouldEmitGotResult; //false when the call is synchronuous so that it does not emit the signal
 };
 
 //the worker object lives in the database connection's thread and owns the QSqlQuery instance
@@ -66,7 +57,7 @@ public:
     ~MSqlQueryWorker() { delete q; }
     QSqlQuery* q; //accessed only from worker threads
 
-    //thread-safe functions
+    //the following functions are thread-safe
     void prepare(const QString &query);
     void bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType);
     void addBindValue(const QVariant& val, QSql::ParamType paramType = QSql::In);
@@ -77,6 +68,8 @@ public:
     QVariant lastInsertId() const;
     QSqlError lastError() const;
     void setNextQueryReady(bool isReady);
+    bool isBusy() const;
+    bool hasNextQuery() const;
 
     Q_SIGNAL void resultsReady(bool success);
     Q_INVOKABLE void execNextQuery(); //always invoked in worker thread
@@ -89,7 +82,8 @@ private:
         bool isReady = false;
     } m_nextQuery;
     QList<QSqlRecord> m_records; //to store query result
-    int m_currentItem;
+    int m_currentItem = 0;
+    bool m_isBusy = false;
     QSqlError m_lastError;
     QVariant m_lastInsertId; //to store query last insert id
 };

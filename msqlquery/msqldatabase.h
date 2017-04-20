@@ -4,12 +4,14 @@
 #include <QSqlError>
 
 class QSqlDriver;
+class QObject;
+class QThread;
 
-class MSqlDatabase //provides an interface similar to QSqlDatabase except that all connections are created in the MDbThread (singleton)
+class MSqlDatabase //provides an interface similar to QSqlDatabase except that all connections are created in the MDbThread
 {
 public:
+    friend class MSqlQuery;
     ~MSqlDatabase();
-    
     static MSqlDatabase addDatabase(const QString& type, const QString& connectionName = defaultConnectionName);
     static MSqlDatabase database(const QString& connectionName = defaultConnectionName);
     
@@ -19,7 +21,9 @@ public:
     void setPassword(const QString& password);
     void setConnectionOptions(const QString& options = QString());
     void setPort(int port);
+    
     QString connectionName()const{return m_connectionName;}
+    //warning: all the following functions block the calling thread
     QString hostName();
     QString databaseName();
     QString userName();
@@ -33,7 +37,14 @@ public:
     bool open();
     void close();
     
-    QSqlDriver* driver(); //you can only connect signals from here, do not call any functions on the returned object directly, as this has to be done from the database thread
+    
+    //notifications support
+    
+    //you can only connect signals from here, do not call any functions on the returned object directly
+    //as this has to be done from the database thread
+    const QSqlDriver* driver(); 
+    //use the following functions to subscribe/unsubscribe to/from notifications
+    //do NOT call the corresponding functions on the QSqlDriver object yourself
     bool subscribeToNotification(const QString & name);
     QStringList subscribedToNotifications()const;
     bool unsubscribeFromNotification(const QString& name);
@@ -44,6 +55,8 @@ public:
     bool isValid()const;
     static const QString defaultConnectionName;
 private:
+    static QThread* threadForConnection(QString connectionName)const;
+    static QObject* workerForConnection(QString connectionName)const;
     MSqlDatabase();
     QString m_connectionName;
 };

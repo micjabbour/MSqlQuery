@@ -2,9 +2,12 @@
 #include "mdbworker.h"
 #include <QSqlDatabase>
 #include <QStringList>
+#include "qthreadutils.h"
+#include "msqlthread.h"
+#include <QSqlDriver>
 
 
-const QString MSqlDatabase::defaultConnectionName(QSqlDatabase::defaultConnection);
+const QString MSqlDatabase::defaultConnectionName(QSqlDatabase::defaultConnection+"msqlquery_default");
 
 MSqlDatabase::MSqlDatabase()
 {
@@ -20,10 +23,9 @@ MSqlDatabase MSqlDatabase::addDatabase(const QString &type, const QString &conne
 {
     MSqlDatabase db;
     db.m_connectionName = connectionName;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseAddDatabase",
-                              Qt::QueuedConnection, 
-                              Q_ARG(QString, type),
-                              Q_ARG(QString, connectionName));
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::addDatabase(type, connectionName);
+    });
     return db;
 }
 
@@ -36,237 +38,216 @@ MSqlDatabase MSqlDatabase::database(const QString &connectionName)
 
 void MSqlDatabase::setHostName(const QString &host)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetHostName",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, host),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setHostName(host);
+    });
 }
 
 void MSqlDatabase::setDatabaseName(const QString &name)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetDatabaseName",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, name),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setDatabaseName(name);
+    });
 }
 
 void MSqlDatabase::setUserName(const QString &name)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetUserName",
-                              Qt::QueuedConnection, 
-                              Q_ARG(QString, name),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setUserName(name);
+    });
 }
 
 void MSqlDatabase::setPassword(const QString& password)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetPassword",
-                              Qt::QueuedConnection, 
-                              Q_ARG(QString, password),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setPassword(password);
+    });
 }
 
 void MSqlDatabase::setConnectionOptions(const QString &options)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetConnectionOptions",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, options),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setConnectOptions(options);
+    });
 }
 
 void MSqlDatabase::setPort(int port)
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseSetPort",
-                              Qt::QueuedConnection,
-                              Q_ARG(int, port),
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    PostToWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false)
+                .setPort(port);
+    });
 }
 
 QString MSqlDatabase::hostName()
 {
-    QString hostName;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseHostName",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QString, hostName),
-                              Q_ARG(QString, m_connectionName));
-    return hostName;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).hostName();
+    });
 }
 
 QString MSqlDatabase::databaseName()
 {
-    QString dbName;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseDatabaseName",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QString, dbName),
-                              Q_ARG(QString, m_connectionName));
-    return dbName;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).databaseName();
+    });
 }
 
 QString MSqlDatabase::userName()
 {
-    QString name;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseUserName",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QString, name),
-                              Q_ARG(QString, m_connectionName));
-    return name; 
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).userName();
+    });
 }
 
 QString MSqlDatabase::password()
 {
-    QString pass;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabasePassword",
-                              Qt::BlockingQueuedConnection, 
-                              Q_RETURN_ARG(QString, pass),
-                              Q_ARG(QString, m_connectionName));
-    return pass;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).password();
+    });
 }
 
 QString MSqlDatabase::connectionOptions()
 {
-    QString options;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseConnectionOptions",
-                              Qt::BlockingQueuedConnection, 
-                              Q_RETURN_ARG(QString, options),
-                              Q_ARG(QString, m_connectionName));
-    return options;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).connectOptions();
+    });
 }
 
 int MSqlDatabase::port()
 {
-    int port;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabasePort",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(int, port),
-                              Q_ARG(QString, m_connectionName));
-    return port;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).port();
+    });
 }
 
 bool MSqlDatabase::transaction()
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseTransaction",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).transaction();
+    });
 }
 
 bool  MSqlDatabase::commit()
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseCommit",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).commit();
+    });
 }
 
 bool MSqlDatabase::rollback()
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseRollback",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).rollback();
+    });
 }
 
 QSqlError MSqlDatabase::lastError()const
 {
-    QSqlError result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseLastError",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QSqlError, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).lastError();
+    });
 }
 
 bool MSqlDatabase::open()
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseOpen",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).open();
+    });
 }
 
 void MSqlDatabase::close()
 {
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseClose",
-                              Qt::QueuedConnection,
-                              Q_ARG(QString, m_connectionName));
+    QString connectionName = m_connectionName;
+    CallByWorker(workerForConnection(connectionName), [=]{
+        QSqlDatabase::database(connectionName, false).close();
+    });
 }
 
 bool MSqlDatabase::isOpen()const
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseIsOpen",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).isOpen();
+    });
 }
 
 bool MSqlDatabase::isOpenError()const
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseIsOpenError",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).isOpenError();
+    });
 }
 
 bool MSqlDatabase::isValid()const
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseIsValid",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).isValid();
+    });
 }
 
 bool MSqlDatabase::subscribeToNotification(const QString &name)
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDriverSubscribeToNotification",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, name),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).driver()->subscribeToNotification(name);
+    });
 }
 
 QStringList MSqlDatabase::subscribedToNotifications()const
 {
-    QStringList result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDriverSubscribedToNotifications",
-                              Qt::BlockingQueuedConnection, 
-                              Q_RETURN_ARG(QStringList, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).driver()->subscribedToNotifications();
+    });
 }
 
 bool MSqlDatabase::unsubscribeFromNotification(const QString &name)
 {
-    bool result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDriverUnsubscribeFromNotification",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, result),
-                              Q_ARG(QString, name),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).driver()->unsubscribeFromNotification(name);
+    });
 }
 
-QSqlDriver* MSqlDatabase::driver()
+const QSqlDriver *MSqlDatabase::driver()
 {
-    QSqlDriver* result;
-    QMetaObject::invokeMethod(MDbWorker::Instance(), "CallQSqlDatabaseDriver",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QSqlDriver*, result),
-                              Q_ARG(QString, m_connectionName));
-    return result;
+    QString connectionName = m_connectionName;
+    return CallByWorker(workerForConnection(connectionName), [=]{
+        return QSqlDatabase::database(connectionName, false).driver();
+    });
+}
+
+QThread* MSqlDatabase::threadForConnection(QString connectionName) const {
+    Q_UNUSED(connectionName) //using currently a singleton thread for all connections
+    //this should be replaced with a single QThread per db connection
+    return MSqlThread::instance();
+}
+
+QObject* MSqlDatabase::workerForConnection(QString connectionName) const {
+    return threadForConnection(connectionName)->eventDispatcher();
 }
