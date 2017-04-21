@@ -178,14 +178,12 @@ QSqlRecord MSqlQueryWorker::record() const {
 
 QVariant MSqlQueryWorker::lastInsertId() const {
     QMutexLocker locker(&mutex);
-    QVariant lastId= m_lastInsertId;
-    return lastId;
+    return m_lastInsertId;
 }
 
 QSqlError MSqlQueryWorker::lastError() const {
     QMutexLocker locker(&mutex);
-    QSqlError lastE = m_lastError;
-    return lastE;
+    return m_lastError;
 }
 
 void MSqlQueryWorker::execNextQuery() {
@@ -204,6 +202,11 @@ void MSqlQueryWorker::execNextQuery() {
         q->addBindValue(std::get<0>(bind), std::get<1>(bind));
     bool result = q->exec(); //execute query
     locker.relock(); //lock mutex to store new records
+    //clear any previous results (if any)
+    m_records.clear();
+    m_currentItem = -1; //before first item
+    m_lastInsertId = QVariant();
+    m_lastError = QSqlError();
     if(m_nextQuery.isReady) //if another query has been scheduled
         return; //cancel current query (no need to store its results)
     if(result) { //execute statement

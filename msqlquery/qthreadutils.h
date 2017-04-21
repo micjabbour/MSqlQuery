@@ -46,7 +46,7 @@ CallByWorker(QObject* worker, Func&& f) {
     PostToWorker(worker, std::forward<Func>(f), blockingConnectionType);
 }
 
-//overload for methods/slots
+//for methods/slots
 //the slot gets invoked in the thread where the QObject lives
 template <typename Object, typename Ret, typename T,
           typename = typename std::enable_if<std::is_base_of<T, Object>::value&&

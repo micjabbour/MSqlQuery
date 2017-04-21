@@ -2,7 +2,9 @@
 #include <QApplication>
 #include "msqldatabase.h"
 #include "msqlquery.h"
-#include "widget.h"
+#include "modeldemowidget.h"
+#include "querydemowidget.h"
+#include <QTabWidget>
 
 int main(int argc, char *argv[])
 {
@@ -48,7 +50,12 @@ int main(int argc, char *argv[])
                               QMessageBox::Cancel);
         return 1;
     }
-    Widget w;
-    w.show();
+    
+    QTabWidget tabWidget;
+    tabWidget.addTab(new QueryDemoWidget, QStringLiteral("MSqlQuery demo"));
+    tabWidget.addTab(new ModelDemoWidget, QStringLiteral("MSqlQueryModel demo"));
+    tabWidget.show();
+    
+    
     return a.exec();
 }

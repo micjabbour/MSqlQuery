@@ -6,6 +6,7 @@ This project is being rewritten from scratch (in the develop branch) to address 
 - [x] get rid of the singleton db thread, and use a separate thread for each database connection.
 - [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
 - [ ] write documentation and a better readme.
+- [ ] add support for batch queries.
 
 ----------------------------------------------------------------------------------------------------------------
 
@@ -20,15 +21,15 @@ An asynchronous interface to use functions in the Qt5 SQL module
 + Also, there is an MSqlQueryModel class, that provides the same interface of QSqlQueryModel, in addition to setQueryAsync() which returns immediately,
   and the model is reset later when the query actually returns
   
-+ You can take a look at the msqlquery-example.pro project for a quick demo on how to use the classes in this project
++ You can take a look at the msqlquery-demo.pro project for a quick demo on how to use the classes in this project
 
 + Support for the notifications system 
 
-+ The Whole Thing Works By Moving all database operations, to a single thread behind the scenes. Only one thread is used because a database connection can
++ The Whole Thing Works By Moving all database operations, to a single thread per connection. Only one thread per connection is used because a database connection can
   be used from the thread that creates it only (a limitation in the Qt5 SQL module)
 
-+ As A consequence to the previous point , you can't use the Qt Classes (QSqlQuery, QSqlDatabase, QSqlQueryModel, ..) directly when using MSqlQuery classes.
-  Because Qt classes will try to access the database connection from A Thread Other the one that created it.
++ As A consequence to the previous point , you can't use the Qt Classes (QSqlQuery, QSqlDatabase, QSqlQueryModel, ..) directly when using MSqlQuery classes on the same connection.
+  because Qt classes will try to access the database connection from a Thread Other the one that created it.
   
 + That is why synchronous functions exist in MSqlQuery classes (they have the same names of the corresponding functions in Qt), they even behave exactly the same
   as their Qt equivalents (as they just call them in the database thread behind the scenes).
