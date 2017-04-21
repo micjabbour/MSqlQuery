@@ -58,7 +58,7 @@ public:
     using PlaceHolderBind = std::tuple<QString, QVariant, QSql::ParamType>;
     using PositionalBind = std::tuple<QVariant, QSql::ParamType>;
 
-    explicit MSqlQueryWorker():QObject(nullptr){} //worker does not have a parent
+    explicit MSqlQueryWorker(); //worker does not have a parent
     ~MSqlQueryWorker();
     QSqlQuery* q; //accessed only from worker threads
     //the following functions are thread-safe
@@ -87,7 +87,7 @@ private:
         bool isReady = false;
     } m_nextQuery;
     QList<QSqlRecord> m_records; //to store query result
-    int m_currentItem = 0;
+    int m_currentItem = -1; //before first item
     bool m_isBusy = false;
     QSqlError m_lastError;
     QVariant m_lastInsertId; //to store query last insert id

@@ -2,8 +2,8 @@
 
 This project is being rewritten from scratch (in the develop branch) to address some design issues:
 
-- [ ] get rid of the MDbWorker class, and use lambda functions instead of its slots.
-- [ ] get rid of the singleton db thread, and use a separate thread for each database connection.
+- [x] get rid of the MDbWorker class, and use lambda functions instead of its slots.
+- [x] get rid of the singleton db thread, and use a separate thread for each database connection.
 - [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
 - [ ] write documentation and a better readme.
 

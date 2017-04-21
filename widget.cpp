@@ -19,7 +19,7 @@ Widget::Widget(QWidget *parent) :
         if(success) {
             int i=0;
             while(m_query->next()) {
-                qDebug() << i << " " << m_query->record().value(0).toString().toLatin1().constData();
+                qDebug() << i << " " << m_query->record().value(0).toString();
                 i++;
             }
         } else {
@@ -55,7 +55,7 @@ void Widget::on_pbExecQuery_clicked()
     }
     int i=0;
     while(query.next()) {
-        qDebug() << i << " " << query.record().value(0).toString().toLatin1().constData();
+        qDebug() << i << " " << query.record().value(0).toString();
         i++;
     }
 }

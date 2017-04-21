@@ -21,8 +21,6 @@ public:
     explicit MSqlThread(QObject *parent = nullptr);
     ~MSqlThread() {}
 
-    static MSqlThread* instance();
-
     QObject* getWorker(){ return m_worker; }
 private:
     QObject* m_worker;

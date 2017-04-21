@@ -49,7 +49,7 @@ CallByWorker(QObject* worker, Func&& f) {
 //overload for methods/slots
 //the slot gets invoked in the thread where the QObject lives
 template <typename Object, typename Ret, typename T,
-          typename = typename std::enable_if<std::is_base_of<QObject, Object>::value&&
+          typename = typename std::enable_if<std::is_base_of<T, Object>::value&&
                                     std::is_base_of<QObject, T>::value>::type
           >
 void InvokeLater(Object* object, Ret (T::* f)()){

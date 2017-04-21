@@ -11,15 +11,19 @@ MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
     //connect func from worker to this instance's signal
     //this will make the signal get emitted from the MSqlQuery thread (instead of the worker thread)
     connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
-    w->moveToThread(MSqlDatabase:: threadForConnection(db.connectionName()));
+    w->moveToThread(MSqlDatabase::threadForConnection(db.connectionName()));
+    //guarantee destruction of worker even when its life time does not end before thread destruction
+    connect(MSqlDatabase::threadForConnection(db.connectionName()), &MSqlThread::finished, w, &QObject::deleteLater);
     auto w= this->w; //in order to capture w by value
     //   ^^^^^^^^^^ is there a better way to do this without using c++14 initializing capture??
     PostToWorker(w, [=]{
-        w->q = new QSqlQuery(db.connectionName());
+        QSqlDatabase qdb = QSqlDatabase::database(db.connectionName());
+        w->q = new QSqlQuery(qdb);
     });
 }
 
 MSqlQuery::~MSqlQuery() {
+    w->setNextQueryReady(false); //cancel next query if any
     InvokeLater(w, &QObject::deleteLater);
 }
 
@@ -106,6 +110,10 @@ void MSqlQuery::workerFinished(bool success) {
     }
 }
 
+MSqlQueryWorker::MSqlQueryWorker():QObject(nullptr) {
+    
+}
+
 MSqlQueryWorker::~MSqlQueryWorker() {
     delete q;
 }
@@ -138,7 +146,7 @@ void MSqlQueryWorker::execAsync() {
     Q_UNUSED(locker)
     m_nextQuery.isReady = true;
     m_records.clear();
-    m_currentItem = 0;
+    m_currentItem = -1; //before first item
     m_lastInsertId = QVariant();
     m_lastError = QSqlError();
     InvokeLater(this, &MSqlQueryWorker::execNextQuery);
@@ -147,7 +155,8 @@ void MSqlQueryWorker::execAsync() {
 bool MSqlQueryWorker::next() {
     QMutexLocker locker(&mutex);
     if(m_records.isEmpty()) return false;
-    if(++m_currentItem >= m_records.size()) return false;
+    if(m_currentItem+1 >= m_records.size()) return false;
+    m_currentItem++;
     return true;
 }
 
@@ -199,14 +208,14 @@ void MSqlQueryWorker::execNextQuery() {
         return; //cancel current query (no need to store its results)
     if(result) { //execute statement
         while(q->next()) m_records.append(q->record());
-        m_currentItem = 0;
+        m_currentItem = -1; //before first item
         m_lastInsertId = q->lastInsertId();
         m_lastError = QSqlError();
         m_isBusy = false;
     } else {
         locker.relock(); //lock mutex to store new error
         m_records.clear();
-        m_currentItem = 0;
+        m_currentItem = -1; //before first item
         m_lastInsertId = QVariant();
         m_lastError= q->lastError();
         m_isBusy = false;

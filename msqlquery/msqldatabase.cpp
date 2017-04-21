@@ -4,10 +4,36 @@
 #include <QSqlDatabase>
 #include <QStringList>
 #include <QSqlDriver>
-#include <QAbstractEventDispatcher>
 #include <QDebug>
+#include <QReadWriteLock>
+#include <QWriteLocker>
+#include <QReadLocker>
+#include <QGlobalStatic>
+#include <QCoreApplication>
 
-const QString MSqlDatabase::defaultConnectionName(QString(QSqlDatabase::defaultConnection)+"msqlquery_default");
+const QString MSqlDatabase::defaultConnectionName(QString(QSqlDatabase::defaultConnection)+"_msqlquery_default");
+
+struct MSqlConnections {
+    QHash<QString, MSqlThread*> dict;
+    bool isPostRoutineAdded = false;
+    mutable QReadWriteLock lock;
+};
+Q_GLOBAL_STATIC(MSqlConnections, getMSqlConnections)
+
+static void MSqlCleanup() {
+    //must be called before QSqlDatabase cleanup routine
+    //so, it must be added after QSqlDatabase
+    MSqlConnections* connections = getMSqlConnections();
+    QWriteLocker locker(&connections->lock);
+    //destruct all connection's threads 
+    //this causes calling thread to block until all threads are terminated
+    for(auto i = connections->dict.begin(); i!=connections->dict.end(); ++i)
+        delete i.value();
+    //make sure any of the threads getting destructed do not attempt to access
+    //MSqlConnections because this will cause a deadlock
+    connections->dict.clear();
+}
+
 
 MSqlDatabase::MSqlDatabase() {
     
@@ -20,9 +46,27 @@ MSqlDatabase::~MSqlDatabase() {
 MSqlDatabase MSqlDatabase::addDatabase(const QString &type, const QString &connectionName) {
     MSqlDatabase db;
     db.m_connectionName = connectionName;
-    PostToWorker(workerForConnection(connectionName), [=]{
+    MSqlConnections* connections = getMSqlConnections();
+    QWriteLocker locker(&connections->lock);
+    Q_UNUSED(locker)
+    if(connections->dict.contains(connectionName)){
+        //destruct and remove old connection if one already exists
+        delete connections->dict.value(connectionName);
+        connections->dict.remove(connectionName);
+    }
+    //create new thread for connection
+    MSqlThread* thread = new MSqlThread();
+    connections->dict.insert(connectionName, thread);
+    //create database connection in newly created thread
+    CallByWorker(thread->getWorker(), [=]{
         QSqlDatabase::addDatabase(type, connectionName);
     });
+    if(!connections->isPostRoutineAdded){ //if post routine not registered
+        //register post routine after calling QSqlDatabase::addDatabase
+        //since postRoutines are called in reverse order of their addition
+        qAddPostRoutine(MSqlCleanup);
+        connections->isPostRoutineAdded= true;
+    }
     return db;
 }
 
@@ -214,9 +258,9 @@ const QSqlDriver *MSqlDatabase::driver() {
 }
 
 MSqlThread* MSqlDatabase::threadForConnection(QString connectionName) {
-    Q_UNUSED(connectionName) //using currently a singleton thread for all connections
-    //TODO: this should be replaced with a single QThread per db connection
-    return MSqlThread::instance();
+    MSqlConnections* connections = getMSqlConnections();
+    QReadLocker locker(&connections->lock);
+    return connections->dict.value(connectionName, nullptr);
 }
 
 QObject* MSqlDatabase::workerForConnection(QString connectionName) {
