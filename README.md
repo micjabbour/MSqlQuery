@@ -1,18 +1,10 @@
-# Note:
-
-This project is being rewritten from scratch (in the develop branch) to address some design issues:
-
-- [x] get rid of the MDbWorker class, and use lambda functions instead of its slots.
-- [x] get rid of the singleton db thread, and use a separate thread for each database connection.
-- [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
-- [ ] write documentation and a better readme.
-- [x] add support for batch queries.
-
-----------------------------------------------------------------------------------------------------------------
+[![Build Status](https://travis-ci.org/micjabbour/MSqlQuery.svg?branch=master)](https://travis-ci.org/micjabbour/MSqlQuery)
 
 # MSqlQuery
 
 An asynchronous interface to use functions in the Qt5 SQL module
+
+![demo screenshot](/screenshot.png?raw=true "demo screenshot")
 
 
 + Include The .pri file in your project, and use MSqlQuery classes (starting with letter M instead of Q), they provide a similar interface to their
@@ -37,3 +29,15 @@ An asynchronous interface to use functions in the Qt5 SQL module
 + The asynchronous functions's names end with *Async(), eg.: execAsync(), setQueryAsync(), ...
 
 + Better Readme coming soon, feel free to contact me ( micjabbour@gmail.com ) for more information
+
+----------------------------------------------------------------------------------------------------------------
+
+# Note:
+
+This project is being rewritten from scratch (in the develop branch) to address some design issues:
+
+- [x] get rid of the MDbWorker class, and use lambda functions instead of its slots.
+- [x] get rid of the singleton db thread, and use a separate thread for each database connection.
+- [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
+- [ ] write documentation and a better readme.
+- [x] add support for batch queries.

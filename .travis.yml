@@ -1,0 +1,39 @@
+# Inspiration from https://github.com/mrdeveloperdude/OctoMY/blob/master/.travis.yml
+
+language: cpp
+compiler: gcc
+os: linux
+dist: trusty
+
+env:
+  global:
+    - QT_VERSION_MAJOR=5
+    - TRAVIS_DIST_NAME=trusty
+    - QT_VERSION_MINOR=8 QT_VERSION_REVISION=0
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-4.0
+      - sourceline: 'ppa:beineri/opt-qt58-trusty'
+    packages:
+      ### GCC 6
+      - g++-6
+      - gcc-6
+      ### sqlite
+      - libsqlite-dev
+      - libsqlite3-dev
+      ### the project depends only on qt5 base (core, sql, gui, widgets)
+      - qt58base
+
+before_script: 
+ - QT_ENV_SCRIPT="/opt/qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/bin/qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}-env.sh"
+ - echo "QT_ENV_SCRIPT=${QT_ENV_SCRIPT}"
+ - cat ${QT_ENV_SCRIPT}
+ - source ${QT_ENV_SCRIPT}
+ 
+script:
+ - which qmake
+ - qmake -v
+ - qmake QMAKE_CXX=g++-6 QMAKE_CC=gcc-6 QMAKE_LINK=g++-6 msqlquery-demo.pro
+ - make

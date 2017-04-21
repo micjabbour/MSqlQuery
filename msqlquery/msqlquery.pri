@@ -3,6 +3,8 @@ QT       += core sql
 
 INCLUDEPATH += $$PWD
 
+CONFIG += c++11
+
 SOURCES += \
     $$PWD/msqldatabase.cpp \
     $$PWD/msqlquery.cpp \
