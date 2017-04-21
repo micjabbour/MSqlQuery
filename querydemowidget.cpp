@@ -34,11 +34,16 @@ void QueryDemoWidget::showResults(bool success) {
     if(success) {
         ui->teResults->setTextColor(QColor(Qt::black));
         ui->teResults->append(QString("Got result in %0 msecs.\n\n").arg(m_stopWatch.elapsed()));
-        ui->teResults->append("Records: \n");
+        ui->teResults->append("First 10 records: \n");
         //MSqlQuery provides an interface similar to that of QSqlQuery
-        while(m_query->next())
-            //show values from the first column in the textedit
-            ui->teResults->append(m_query->record().value(0).toString());
+        int rowCount = 0;
+        while(m_query->next() && rowCount++<10) { //loop to display first 10 records
+            QString recordStr;
+            for(int i=0; i<m_query->record().count(); i++)
+                recordStr+= m_query->record().value(i).toString()+ "\t";
+            recordStr.append("\n");
+            ui->teResults->append(recordStr);
+        }
     } else {
         ui->teResults->setTextColor(QColor(Qt::red));
         ui->teResults->append(QString("Got error in %0 msecs.\n\n").arg(m_stopWatch.elapsed()));

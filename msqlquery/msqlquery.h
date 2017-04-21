@@ -3,11 +3,11 @@
 
 #include <QObject>
 #include <QSqlRecord>
+#include <QSqlQuery>
 #include <QVariant>
 #include "msqldatabase.h"
 #include <QMutex>
 
-class QSqlQuery;
 class MSqlQueryWorker;
 
 //all functions in this class do NOT block EXCEPT the exec() function
@@ -23,12 +23,14 @@ public:
     void bindValue(const QString& placeholder, const QVariant& val, QSql::ParamType paramType = QSql::In);
     bool exec(const QString& query);
     bool exec();
+    bool execBatch(QSqlQuery::BatchExecutionMode mode = QSqlQuery::ValuesAsRows);
     bool next();
     bool seek(int index);
     QSqlRecord record() const;
     QSqlError lastError() const;
     void execAsync(const QString& query);
     void execAsync();
+    void execBatchAsync(QSqlQuery::BatchExecutionMode mode = QSqlQuery::ValuesAsRows);
     QString getDbConnectionName()const{return db.connectionName();}
     QVariant lastInsertId()const;
 
@@ -40,7 +42,8 @@ signals:
     void busyToggled(bool isBusy);
 private:
     Q_INVOKABLE void workerFinished(bool success);
-
+    
+    bool execNextBlocking();
     //pointer accessed only from the client thread
     //passed to worker threads through lambdas capturing it by value, lives in database connection thread
     MSqlQueryWorker* w;
@@ -65,13 +68,13 @@ public:
     void prepare(const QString &query);
     void bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType);
     void addBindValue(const QVariant& val, QSql::ParamType paramType = QSql::In);
-    void execAsync();
+    void execAsync(bool isBatch = false, QSqlQuery::BatchExecutionMode batchMode = QSqlQuery::ValuesAsRows);
     bool next();
     bool seek(int index);
     QSqlRecord record() const;
     QVariant lastInsertId() const;
     QSqlError lastError() const;
-    void setNextQueryReady(bool isReady);
+    void setNextQueryReady(bool isReady, bool isBatch = false, QSqlQuery::BatchExecutionMode batchMode = QSqlQuery::ValuesAsRows);
     bool isBusy() const;
     bool hasNextQuery() const;
     QList<QSqlRecord> getAllRecords() const;
@@ -84,6 +87,8 @@ private:
         QString prepareStr;
         QList<PlaceHolderBind> placeHolderBinds;
         QList<PositionalBind> positionalBinds;
+        bool isBatch = false;
+        QSqlQuery::BatchExecutionMode batchMode;
         bool isReady = false;
     } m_nextQuery;
     QList<QSqlRecord> m_records; //to store query result

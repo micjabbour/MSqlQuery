@@ -16,6 +16,9 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLineEdit" name="leQuery">
+     <property name="text">
+      <string>select * from people;</string>
+     </property>
      <property name="placeholderText">
       <string>type your query here</string>
      </property>
@@ -79,7 +82,11 @@
     </layout>
    </item>
    <item>
-    <widget class="QTextEdit" name="teResults"/>
+    <widget class="QTextEdit" name="teResults">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

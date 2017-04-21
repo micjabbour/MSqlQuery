@@ -51,6 +51,12 @@ void MSqlQuery::execAsync()
     emit busyToggled(true);
 }
 
+void MSqlQuery::execBatchAsync(QSqlQuery::BatchExecutionMode mode) {
+    w->execAsync(true, mode);
+    m_isBusy = true;
+    emit busyToggled(true);
+}
+
 bool MSqlQuery::exec(const QString &query) {
     w->prepare(query);
     return exec();
@@ -58,15 +64,12 @@ bool MSqlQuery::exec(const QString &query) {
 
 bool MSqlQuery::exec() {
     w->setNextQueryReady(true);
-    //block signals when using sync API ( blockSignals(true) is not thread-safe )
-    disconnect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
-    auto w= this->w; //in order to capture w by value
-    CallByWorker(w, [=]{
-        w->execNextQuery();
-    });
-    connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
-    bool success = w->lastError().type()==QSqlError::NoError;
-    return success;
+    return execNextBlocking();
+}
+
+bool MSqlQuery::execBatch(QSqlQuery::BatchExecutionMode mode) {
+    w->setNextQueryReady(true, true, mode);
+    return execNextBlocking();
 }
 
 bool MSqlQuery::next() {
@@ -110,6 +113,18 @@ void MSqlQuery::workerFinished(bool success) {
     }
 }
 
+bool MSqlQuery::execNextBlocking() {
+    //block signals when using sync API ( blockSignals(true) is not thread-safe )
+    disconnect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
+    auto w= this->w; //in order to capture w by value
+    CallByWorker(w, [=]{
+        w->execNextQuery();
+    });
+    connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
+    bool success = w->lastError().type()==QSqlError::NoError;
+    return success;
+}
+
 MSqlQueryWorker::MSqlQueryWorker():QObject(nullptr) {
     
 }
@@ -141,10 +156,12 @@ void MSqlQueryWorker::addBindValue(const QVariant &val, QSql::ParamType paramTyp
     m_nextQuery.positionalBinds.append(std::make_tuple(val, paramType));
 }
 
-void MSqlQueryWorker::execAsync() {
+void MSqlQueryWorker::execAsync(bool isBatch, QSqlQuery::BatchExecutionMode batchMode) {
     QMutexLocker locker(&mutex);
     Q_UNUSED(locker)
     m_nextQuery.isReady = true;
+    m_nextQuery.isBatch = isBatch;
+    m_nextQuery.batchMode = batchMode;
     m_records.clear();
     m_currentItem = -1; //before first item
     m_lastInsertId = QVariant();
@@ -200,7 +217,13 @@ void MSqlQueryWorker::execNextQuery() {
         q->bindValue(std::get<0>(bind), std::get<1>(bind), std::get<2>(bind));
     for(const auto& bind : currentQuery.positionalBinds)
         q->addBindValue(std::get<0>(bind), std::get<1>(bind));
-    bool result = q->exec(); //execute query
+    bool result; //query execution result
+    if(currentQuery.isBatch)
+        //do exec batch if it is a batch query
+        result = q->execBatch(currentQuery.batchMode);
+    else
+        //otherwise call normal exec
+        result = q->exec();
     locker.relock(); //lock mutex to store new records
     //clear any previous results (if any)
     m_records.clear();
@@ -227,10 +250,12 @@ void MSqlQueryWorker::execNextQuery() {
     emit resultsReady(result);
 }
 
-void MSqlQueryWorker::setNextQueryReady(bool isReady) {
+void MSqlQueryWorker::setNextQueryReady(bool isReady, bool isBatch, QSqlQuery::BatchExecutionMode batchMode) {
     QMutexLocker locker(&mutex);
     Q_UNUSED(locker)
     m_nextQuery.isReady = isReady;
+    m_nextQuery.isBatch = isBatch;
+    m_nextQuery.batchMode = batchMode;
 }
 
 bool MSqlQueryWorker::hasNextQuery() const {

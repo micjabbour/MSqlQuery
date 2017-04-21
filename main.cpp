@@ -4,18 +4,34 @@
 #include "msqlquery.h"
 #include "modeldemowidget.h"
 #include "querydemowidget.h"
+#include "loadingdialog.h"
 #include <QTabWidget>
+
+
+QString getRandomString() //to generate random strings (for dummy data)
+{
+   const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+   const int randomStringLength = 10; //random strings of 10 characters
+
+   QString randomString;
+   for(int i=0; i<randomStringLength; ++i)
+   {
+       int index = qrand() % possibleCharacters.length();
+       QChar nextChar = possibleCharacters.at(index);
+       randomString.append(nextChar);
+   }
+   return randomString;
+}
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     
     //Setup database application as you would do with QSqlDatabase
-    //Just using MSqlDatabase instead
+    //(using MSqlDatabase instead)
     
     //Here I am using an in-memory sqlite database for demonstration purposes
     //You can use any connect to any Sql Server supported by QSqlDatabase
-    /*
     MSqlDatabase mdb = MSqlDatabase::addDatabase("QSQLITE");
     mdb.setDatabaseName(":memory:");
     if (!mdb.open()) {
@@ -27,28 +43,38 @@ int main(int argc, char *argv[])
                      "Click Cancel to exit."), QMessageBox::Cancel);
         return 1;
     }
-    
-    //setting up a test database table with some dummy data
-    
+    //set random sequence seed
+    qsrand(QTime(0, 0, 0).secsTo(QTime::currentTime()));
+    //create demo table and fill with dummy data
     MSqlQuery query;
-    query.exec("create table person (id int primary key, "
-               "firstname varchar(20), lastname varchar(20))");
-    query.exec("insert into person values(101, 'Danny', 'Young')");
-    query.exec("insert into person values(102, 'Christine', 'Holand')");
-    query.exec("insert into person values(103, 'Lars', 'Gordon')");
-    query.exec("insert into person values(104, 'Roberto', 'Robitaille')");
-    query.exec("insert into person values(105, 'Maria', 'Papadopoulos')");
-    */
-    MSqlDatabase mdb = MSqlDatabase::addDatabase("QPSQL");
-    mdb.setHostName("192.168.5.5");
-    mdb.setUserName("postgres");
-    mdb.setPassword("123456");
-    mdb.setDatabaseName("test");
-    if(!mdb.open()){
-        QMessageBox::critical(Q_NULLPTR, qApp->tr("Error"),
-                              qApp->tr("Error opening database."),
-                              QMessageBox::Cancel);
-        return 1;
+    if(!query.exec("create table people (id integer primary key, "
+               "firstname varchar(20), lastname varchar(20))"))
+        return false;
+    query.prepare("insert into people(firstname, lastname) values(?, ?);");
+    QVariantList firstNames;
+    QVariantList lastNames;
+    for(int i=0; i<100000; i++) {
+        firstNames << getRandomString();
+        lastNames << getRandomString();
+    }
+    query.addBindValue(firstNames);
+    query.addBindValue(lastNames);
+    query.execBatchAsync();
+    
+    //show loading dialog
+    LoadingDialog loadingDialog("Creating demo table, Please Wait. . .");
+    QObject::connect(&query, &MSqlQuery::resultsReady, [&](bool success){
+        if(success)
+            loadingDialog.accept();
+        else
+            loadingDialog.reject();
+    });
+    
+    if(!loadingDialog.exec()){
+        QMessageBox::critical(0, qApp->tr("Error creating demo table"),
+                              "Something went wrong while trying to create demo table.\n"
+                              "Click Cancel to exit.", QMessageBox::Cancel);
+        return 2;
     }
     
     QTabWidget tabWidget;

@@ -19,11 +19,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     querydemowidget.cpp \
-    modeldemowidget.cpp
+    modeldemowidget.cpp \
+    loadingdialog.cpp
 
 HEADERS  += \    
     querydemowidget.h \
-    modeldemowidget.h
+    modeldemowidget.h \
+    loadingdialog.h
 
 FORMS    += \
     querydemowidget.ui \

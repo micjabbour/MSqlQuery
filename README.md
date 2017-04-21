@@ -6,7 +6,7 @@ This project is being rewritten from scratch (in the develop branch) to address 
 - [x] get rid of the singleton db thread, and use a separate thread for each database connection.
 - [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
 - [ ] write documentation and a better readme.
-- [ ] add support for batch queries.
+- [x] add support for batch queries.
 
 ----------------------------------------------------------------------------------------------------------------
 

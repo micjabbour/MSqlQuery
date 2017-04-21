@@ -3,8 +3,6 @@ QT       += core sql
 
 INCLUDEPATH += $$PWD
 
-DEFINES += M_SQL_QUERY_DEBUG
-
 SOURCES += \
     $$PWD/msqldatabase.cpp \
     $$PWD/msqlquery.cpp \
