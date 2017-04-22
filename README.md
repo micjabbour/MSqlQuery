@@ -43,3 +43,4 @@ todo list:
 - [ ] use std::future or QFuture to properly encapsulate asynchronous operations.
 - [ ] write documentation and a better readme.
 - [x] add support for batch queries.
+- [ ] add a class to encapsulate several transactional SQL queries asynchronously.
