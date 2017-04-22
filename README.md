@@ -4,7 +4,9 @@
 
 An asynchronous interface to use functions in the Qt5 SQL module
 
-![demo screenshot](/screenshot.png?raw=true "demo screenshot")
+![demo screenshot1](/demo-screenshot0.png?raw=true "demo screenshot")
+
+![demo screenshot2](/demo-screenshot1.png?raw=true "demo screenshot")
 
 
 + Include The .pri file in your project, and use MSqlQuery classes (starting with letter M instead of Q), they provide a similar interface to their
@@ -34,7 +36,7 @@ An asynchronous interface to use functions in the Qt5 SQL module
 
 # Note:
 
-This project is being rewritten from scratch (in the develop branch) to address some design issues:
+todo list:
 
 - [x] get rid of the MDbWorker class, and use lambda functions instead of its slots.
 - [x] get rid of the singleton db thread, and use a separate thread for each database connection.

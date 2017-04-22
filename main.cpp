@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     query.execBatchAsync();
     
     //show loading dialog
-    LoadingDialog loadingDialog("Creating demo table, Please Wait. . .");
+    LoadingDialog loadingDialog("Creating demo table, please wait. . .");
     QObject::connect(&query, &MSqlQuery::resultsReady, [&](bool success){
         if(success)
             loadingDialog.accept();
