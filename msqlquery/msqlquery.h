@@ -41,7 +41,7 @@ signals:
     void resultsReady(bool success);
     void busyToggled(bool isBusy);
 private:
-    Q_INVOKABLE void workerFinished(bool success);
+    Q_INVOKABLE void workerFinished(int queryId, bool success);
     
     bool execNextBlocking();
     //pointer accessed only from the client thread
@@ -49,6 +49,9 @@ private:
     MSqlQueryWorker* w;
     MSqlDatabase db;
     bool m_isBusy = false; //accessed only from client thread
+    //when a query is finished, its id is checked to make sure that it matches currentQueryId
+    //(in order to emit resultsReady signal only for the last query set on this object)
+    int currentQueryId = -1;
 };
 
 //the worker object lives in the database connection's thread and owns the QSqlQuery instance
@@ -68,7 +71,7 @@ public:
     void prepare(const QString &query);
     void bindValue(const QString &placeholder, const QVariant &val, QSql::ParamType paramType);
     void addBindValue(const QVariant& val, QSql::ParamType paramType = QSql::In);
-    void execAsync(bool isBatch = false, QSqlQuery::BatchExecutionMode batchMode = QSqlQuery::ValuesAsRows);
+    void execAsync(int queryId, bool isBatch = false, QSqlQuery::BatchExecutionMode batchMode = QSqlQuery::ValuesAsRows);
     bool next();
     bool seek(int index);
     QSqlRecord record() const;
@@ -79,11 +82,15 @@ public:
     bool hasNextQuery() const;
     QList<QSqlRecord> getAllRecords() const;
 
-    Q_SIGNAL void resultsReady(bool success);
+    Q_SIGNAL void resultsReady(int queryId, bool success);
     Q_INVOKABLE void execNextQuery(); //always invoked in worker thread
 private:
     mutable QMutex mutex;
     struct SqlQueryExec {
+        //every query to be executed has an id, so that it can be overwritten later
+        //when a query is finished, its id is checked to make sure that it has not been overwritten
+        //(in order to emit resultsReady signal only for the last query set on this object)
+        int queryId = -1; 
         QString prepareStr;
         QList<PlaceHolderBind> placeHolderBinds;
         QList<PositionalBind> positionalBinds;

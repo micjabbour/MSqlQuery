@@ -46,13 +46,13 @@ void MSqlQuery::execAsync(const QString &query) {
 
 void MSqlQuery::execAsync()
 {
-    w->execAsync();
+    w->execAsync(++currentQueryId);
     m_isBusy = true;
     emit busyToggled(true);
 }
 
 void MSqlQuery::execBatchAsync(QSqlQuery::BatchExecutionMode mode) {
-    w->execAsync(true, mode);
+    w->execAsync(++currentQueryId, true, mode);
     m_isBusy = true;
     emit busyToggled(true);
 }
@@ -101,12 +101,8 @@ QList<QSqlRecord> MSqlQuery::getAllRecords() const {
     return w->getAllRecords();
 }
 
-void MSqlQuery::workerFinished(bool success) {
-    if(!(w->isBusy()||w->hasNextQuery())) {
-        //emit ready signal only when there are no scheduled queries
-        //and when the worker is not currently executing any query
-        //because otherwise the current query wouldn't be interesting for the user
-        //and should have been cancelled
+void MSqlQuery::workerFinished(int queryId, bool success) {
+    if(queryId == currentQueryId) { //if this signal does not belong to an overwritten query
         m_isBusy = false;
         emit resultsReady(success);
         emit busyToggled(false);
@@ -114,6 +110,7 @@ void MSqlQuery::workerFinished(bool success) {
 }
 
 bool MSqlQuery::execNextBlocking() {
+    currentQueryId++; //previous queries are not interesting anymore
     //block signals when using sync API ( blockSignals(true) is not thread-safe )
     disconnect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
     auto w= this->w; //in order to capture w by value
@@ -156,12 +153,13 @@ void MSqlQueryWorker::addBindValue(const QVariant &val, QSql::ParamType paramTyp
     m_nextQuery.positionalBinds.append(std::make_tuple(val, paramType));
 }
 
-void MSqlQueryWorker::execAsync(bool isBatch, QSqlQuery::BatchExecutionMode batchMode) {
+void MSqlQueryWorker::execAsync(int queryId, bool isBatch, QSqlQuery::BatchExecutionMode batchMode) {
     QMutexLocker locker(&mutex);
     Q_UNUSED(locker)
     m_nextQuery.isReady = true;
     m_nextQuery.isBatch = isBatch;
     m_nextQuery.batchMode = batchMode;
+    m_nextQuery.queryId = queryId;
     m_records.clear();
     m_currentItem = -1; //before first item
     m_lastInsertId = QVariant();
@@ -247,7 +245,7 @@ void MSqlQueryWorker::execNextQuery() {
         m_isBusy = false;
     }
     locker.unlock();
-    emit resultsReady(result);
+    emit resultsReady(currentQuery.queryId, result);
 }
 
 void MSqlQueryWorker::setNextQueryReady(bool isReady, bool isBatch, QSqlQuery::BatchExecutionMode batchMode) {
