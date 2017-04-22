@@ -12,7 +12,7 @@ QT       += core gui widgets
 # application's .pro file
 include(msqlquery/msqlquery.pri)
 
-TARGET = msqlquery-demo
+TARGET = msqlquery-demo-app
 
 TEMPLATE = app
 
