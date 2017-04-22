@@ -4,9 +4,9 @@
 
 An asynchronous interface to use functions in the Qt5 SQL module
 
-![demo screenshot1](/demo-screenshot0.png?raw=true "demo screenshot")
+![demo screenshot1](docs/demo-screenshot0.png?raw=true "demo screenshot")
 
-![demo screenshot2](/demo-screenshot1.png?raw=true "demo screenshot")
+![demo screenshot2](docs/demo-screenshot1.png?raw=true "demo screenshot")
 
 
 + Include The .pri file in your project, and use MSqlQuery classes (starting with letter M instead of Q), they provide a similar interface to their

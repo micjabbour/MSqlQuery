@@ -35,5 +35,5 @@ before_script:
 script:
  - which qmake
  - qmake -v
- - qmake QMAKE_CXX=g++-6 QMAKE_CC=gcc-6 QMAKE_LINK=g++-6 msqlquery-demo.pro
+ - qmake QMAKE_CXX=g++-6 QMAKE_CC=gcc-6 QMAKE_LINK=g++-6 msqlquery-demo/msqlquery-demo.pro
  - make
