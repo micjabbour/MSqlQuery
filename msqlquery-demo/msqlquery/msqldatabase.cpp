@@ -108,7 +108,7 @@ void MSqlDatabase::setPassword(const QString& password) {
     });
 }
 
-void MSqlDatabase::setConnectionOptions(const QString &options) {
+void MSqlDatabase::setConnectOptions(const QString &options) {
     QString connectionName = m_connectionName;
     PostToWorker(workerForConnection(connectionName), [=]{
         QSqlDatabase::database(connectionName, false)
@@ -124,35 +124,35 @@ void MSqlDatabase::setPort(int port) {
     });
 }
 
-QString MSqlDatabase::hostName() {
+QString MSqlDatabase::hostName() const {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).hostName();
     });
 }
 
-QString MSqlDatabase::databaseName() {
+QString MSqlDatabase::databaseName() const {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).databaseName();
     });
 }
 
-QString MSqlDatabase::userName() {
+QString MSqlDatabase::userName() const {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).userName();
     });
 }
 
-QString MSqlDatabase::password() {
+QString MSqlDatabase::password() const {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).password();
     });
 }
 
-QString MSqlDatabase::connectionOptions() {
+QString MSqlDatabase::connectOptions() const {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).connectOptions();
@@ -173,7 +173,7 @@ bool MSqlDatabase::transaction() {
     });
 }
 
-bool  MSqlDatabase::commit() {
+bool MSqlDatabase::commit() {
     QString connectionName = m_connectionName;
     return CallByWorker(workerForConnection(connectionName), [=]{
         return QSqlDatabase::database(connectionName, false).commit();
