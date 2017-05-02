@@ -76,7 +76,7 @@ public:
     /*!
      * \brief destroys the %MSqlQuery object.
      *
-     * The destructor will try to cancel any ongoing asynchronous executions
+     * The destructor tries to cancel any ongoing asynchronous executions
      */
     ~MSqlQuery();
 

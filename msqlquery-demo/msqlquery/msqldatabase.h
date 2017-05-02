@@ -11,13 +11,13 @@ class MSqlThread;
  * \brief The MSqlDatabase class represents a database connection that can be
  *        used from MSqlQuery.
  *
- * The class provides an interface similar to QSqlDatabase. Create a connection
- * by calling the static addDatabase() function, This connection can afterwards
- * be used from MSqlQuery. If you don't pass the connection name argument,
- * MSqlQuery's default connection is assumed (this is different from QSqlQuery's
- * default connection). The following snippet shows how to create and open a
- * default MSqlQuery connection to a PostgreSQL database (similar to the
- * QSqlDatabase example):
+ * The class provides an interface similar to that of QSqlDatabase. Create a
+ * connection by calling the static addDatabase() function, This connection can
+ * afterwards be used from MSqlQuery. If you don't pass the connection name
+ * argument, MSqlQuery's default connection is assumed (this is different from
+ * QSqlQuery's default connection). The following snippet shows how to create
+ * and open a default MSqlQuery connection to a PostgreSQL database (similar to
+ * the QSqlDatabase example):
  *
  *     MSqlDatabase db = MSqlDatabase::addDatabase("QPSQL");
  *     db.setHostName("acidalia");
@@ -50,9 +50,9 @@ public:
      *
      * Adds a database to the list of database connections using the supplied
      * driver type and the connectionName. Internally, The database connection
-     * is created in a background thread managed by the library. When using the
-     * library to execute queries on that database connection, all calls are
-     * internally done in the connection's background thread.
+     * is created in a background thread managed by the library. You should
+     * always use library classes when using this connection, so that it is
+     * internally accessed only from the connection's background thread.
      *
      * \param type a registered driver type
      * \param connectionName
@@ -132,7 +132,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::hostName in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -143,7 +144,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::databaseName
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -154,7 +156,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::userName in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -165,7 +168,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::password in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -176,7 +180,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::connectOptions
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -190,7 +195,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::transaction
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -207,7 +213,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::commit in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -224,7 +231,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::rollback in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -237,7 +245,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::port in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -248,10 +257,11 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::lastError
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
-     *          Use MSqlQuery::lastError for a non-blocking solution.
+     *          Use MSqlQuery::lastError() for a non-blocking solution.
      *
      * \sa MSqlQuery::lastError
      */
@@ -265,7 +275,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::open in the
      *          database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -278,7 +289,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::close in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      */
@@ -299,7 +311,8 @@ public:
      * \warning The function is implemented by calling
      *          QSqlDatabase::driver()->%subscribeToNotification() in the
      *          database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -318,7 +331,8 @@ public:
      * \warning The function is implemented by calling
      *          QSqlDatabase::driver()->%subscribedToNotifications() in the
      *          database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -337,9 +351,11 @@ public:
      * \warning The function is implemented by calling
      *          QSqlDatabase::driver()->%unsubscribeFromNotification() in the
      *          database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
+     *
      * \param name event notification identifier name
      * \return true if the operation succeeded. Otherwisse it returns false.
      * \sa subscribeToNotification(), subscribedToNotifications(), driver()
@@ -363,7 +379,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::isOpen in
      *          the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -376,7 +393,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::isOpenError
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
@@ -389,7 +407,8 @@ public:
      *
      * \warning The function is implemented by calling QSqlDatabase::isValid
      *          in the database connection's thread and returning its result.
-     *          This means that if the database connection's thread is busy
+     *
+     * \warning This means that if the database connection's thread is busy
      *          (executing a query for example), this function might block the
      *          calling thread until the ongoing query finishes.
      *
