@@ -8,9 +8,13 @@
 
 class MSqlQuery;
 
-
-//avoid deleting any MSqlQueryObject while it is retrieving data (ie. by closing its parent dialog)
-//that will cause the MDbThread to write its results into invalid memory
+/*!
+ * \brief The MSqlQueryModel class provides a read-only data model for accessing
+ *        SQL result sets synchronously or asynchronously.
+ * 
+ * The class provides a subset of the interface of QSqlQueryModel, in addition 
+ * to some asynchronous functions. It can be used to 
+ */
 
 class MSqlQueryModel : public QAbstractTableModel
 {
@@ -23,6 +27,10 @@ public:
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+    /*!
+     * \brief isBusy
+     * \return 
+     */
     bool isBusy()const;
     
     

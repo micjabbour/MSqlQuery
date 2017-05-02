@@ -57,8 +57,8 @@ class MSqlQueryWorker;
  *     //don't want to cancel the ongoing operation
  *
  * The class also supports using QSqlQuery's batch execution mode. This can be
- * done using the functions execBatch (for synchronous execution) and
- * execBatchAsync (for asynchronous execution)
+ * done using the functions execBatch() (for synchronous execution) and
+ * execBatchAsync() (for asynchronous execution)
  */
 class MSqlQuery : public QObject {
     Q_OBJECT
@@ -90,7 +90,8 @@ public:
      * \warning Unlike QSqlQuery::prepare, this function does not report
      *          success or failure. This is by design (in order to make the
      *          function fully asynchronous). You can get failure/success status
-     *          when executing the statement (using the resultsReady signal).
+     *          after executing the statement (whether synchronously or
+     *          asynchronously) using lastError().
      *
      * \param query query statment to prepare
      */
@@ -107,6 +108,7 @@ public:
      * \param paramType can be QSql::In, QSql::Out, or QSql::InOut
      */
     void addBindValue(const QVariant& val, QSql::ParamType paramType = QSql::In);
+    
     /*!
      * \brief Similar to QSqlQuery::bindValue.
      *
@@ -129,46 +131,67 @@ public:
      *
      * \param query the SQL statement to execute
      * \return true on success, false otherwise.
-     * \sa execAsync(const QString& query).
+     * 
+     * \warning This function maybe less efficient than QSqlQuery::exec() since
+     *          it retrieves all rows from the database and stores them
+     *          internally, so that consequent calls to next(), value(), 
+     *          can return without blocking (by reading internally stored data).
+     *          But this shouldn't be a problem for most use cases.
+     * 
+     * \sa execAsync(const QString& query), getAllRecords()
      */
     bool exec(const QString& query);
 
     /*!
      * \brief Similar to QSqlQuery::exec().
      *
-     * Executes a previously prepared SQL statement.
+     * Executes a previously prepared SQL statement synchronously.
      *
      * \note The function blocks the calling thread until execution is finished.
      *
      * \return true on success, false otherwise.
-     * \sa execAsync()
+     * 
+     * \warning This function maybe less efficient than QSqlQuery::exec() since
+     *          it retrieves all rows from the database and stores them
+     *          internally, so that consequent calls to next(), value(), 
+     *          record() can return without blocking (by reading internally
+     *          stored data instead of querying the database). But this
+     *          shouldn't be a problem for most use cases.
+     * 
+     * \sa execAsync(), getAllRecords()
      */
     bool exec();
+    
     /*!
-     * \brief Similar to QSqlQuery::execBatch
+     * \brief Similar to QSqlQuery::execBatch().
      *
-     * Executes a previously prepared SQL query in a batch.
+     * Executes a previously prepared SQL query in a batch synchronously.
      *
      * \note The function blocks the calling thread until execution is finished.
-     *
      * \param mode specifies batch execution mode (similar to QSqlQuery)
      * \return true on success, false otherwise.
+     * 
+     * \warning This function maybe less efficient than QSqlQuery::execBatch()
+     *          since it retrieves all rows from the database and stores them
+     *          internally, so that consequent calls to next(), value(), 
+     *          record() can return without blocking (by reading internally
+     *          stored data instead of querying the database). But this
+     *          shouldn't be a problem for most use cases.
+     * 
+     * \sa execBatchAsync(), getAllRecords()
      */
     bool execBatch(QSqlQuery::BatchExecutionMode mode = QSqlQuery::ValuesAsRows);
+    
     /*!
-     * \brief Similar to QSqlQuery::next
+     * \brief Similar to QSqlQuery::next().
      *
      * Positions the query on the next record
      * \return true on success, false otherwise.
      *
      * \note The function is fully asynchronous
-     *
-     * \warning When using any of %MSqlQuery's exec functions, execution is not
-     *          finished until all queries are retrieved. This might be slower
-     *          in some situations, but it is by design (in order to make
-     *          functions like this fully  asynchronous).
      */
     bool next();
+    
     /*!
      * \brief Similar to QSqlQuery::seek
      * Positions the query on the record at position *index*
@@ -176,61 +199,148 @@ public:
      * \return true on success, false otherwise.
      *
      * \note The function is fully asynchronous
-     *
-     * \warning When using any of %MSqlQuery's exec functions, execution is not
-     *          finished until all queries are retrieved. This might be slower
-     *          in some situations, but it is by design (in order to make
-     *          functions like this fully  asynchronous).
      */
     bool seek(int index);
+    
     /*!
      * \brief Similar to QSqlQuery::record
      *
      * \return a `QSqlRecord` that contains the current row's values.
      *
      * \note The function is fully asynchronous
-     *
-     * \warning When using any of %MSqlQuery's exec functions, execution is not
-     *          finished until all queries are retrieved. This might be slower
-     *          in some situations, but it is by design (in order to make
-     *          functions like this fully  asynchronous).
      */
     QSqlRecord record() const;
+    
     /*!
-     * \brief value
-     * \param index
-     * \return 
+     * \brief Similar to QSqlQuery::value
+     * \param index the index of the field whose value is to be returned
+     * \return the value of the field *index* in the current record
+     * 
+     * \note The function is fully asynchronous
      */
     QVariant value(int index) const;
+    
     /*!
-     * \brief value
-     * \param name
-     * \return 
+     * \brief Similar to QSqlQuery::value
+     * \param name the name of the field whose value is to be returned
+     * \return the value of the field *name* in the current record
+     * 
+     * \note The function is fully asynchronous
      */
     QVariant value(const QString& name) const;
+    
     /*!
-     * \brief lastError
-     * \return
+     * \brief Similar to QSqlQuery::lastError
+     * \return information about the last error (if any) that occured with
+     *         with this query
+     * 
+     * \note The function is fully asynchronous
      */
     QSqlError lastError() const;
+    
     /*!
-     * \brief execAsync
+     * \brief Asynchronous version of exec(const QString& query)
+     * 
+     * Executes the SQL statement in *query* asynchronously. The MSqlQuery 
+     * instance will emit resultsReady() signal when execution is finished (unless
+     * another statement is executed in the mean time).
+     * 
+     * \warning A new asynchronous operation overrides any previous ones in the
+     *          same MSqlQuery instance. In other words, The function will try
+     *          to cancel any ongoing asynchronous queries being executed by
+     *          this MSqlQuery instance.
+     * 
      * \param query
+     * 
+     * \sa resultsReady()
      */
     void execAsync(const QString& query);
+    
     /*!
-     * \brief execAsync
+     * \brief Asynchronous version of exec()
+     * 
+     * Executes a previously prepared SQL statement asynchronously. The 
+     * MSqlQuery instance will emit resultsReady() signal when execution is
+     * finished (unless another statement is executed in the mean time).
+     * 
+     * \warning A new asynchronous operation overrides any previous ones in the
+     *          same MSqlQuery instance. In other words, The function will try
+     *          to cancel any ongoing asynchronous queries being executed by
+     *          this MSqlQuery instance.
+     * 
+     * \sa resultsReady()
      */
     void execAsync();
+    /*!
+     * \brief Asynchronous version of execBatch()
+     * 
+     * Executes a previously prepared SQL query in a batch asynchronously. The 
+     * MSqlQuery instance will emit resultsReady() signal when execution is
+     * finished (unless another statement is executed in the mean time).
+     * 
+     * \param mode specifies batch execution mode (similar to QSqlQuery)
+     * 
+     * \warning A new asynchronous operation overrides any previous ones in the
+     *          same MSqlQuery instance. In other words, The function will try
+     *          to cancel any ongoing asynchronous queries being executed by
+     *          this MSqlQuery instance.
+     * 
+     * \sa resultsReady()
+     */
     void execBatchAsync(QSqlQuery::BatchExecutionMode mode = QSqlQuery::ValuesAsRows);
-    QString getDbConnectionName()const{return db.connectionName();}
+    
+    /*!
+     * \brief Similar to QSqlQuery::lastInsertId
+     * 
+     * \return the object ID of the most recent inserted row if the database
+     * supports it.
+     * 
+     * \note The function is fully asynchronous
+     */
     QVariant lastInsertId()const;
 
     //additional functions
+    /*!
+     * \brief Checks if the MSqlQuery instance has any unfinished queries
+     * 
+     * \return true if an asynchronous operation has not finished yet, false if
+     *         there are no asynchronous operations to execute by the current 
+     *         MSqlQuery instance.
+     */
     bool isBusy()const;
+    /*!
+     * \brief Returns the whole result of the previous SQL statement
+     * 
+     * The function provides another way to access results from the previous SQL
+     * statement.
+     * 
+     * \return a `QList` of `QSqlRecord` that contains the whole result of the
+     * previous SQL statement
+     */
     QList<QSqlRecord> getAllRecords() const;
 signals:
+    
+    /*!
+     * \brief emitted when the last asynchronous operation is finished
+     * 
+     * \param success true if the last statement executed successfuly, false
+     *        otherwise.
+     * 
+     * \note The signal is guaranteed to be emitted only for non-overridden
+     *       asynchronous operations
+     * 
+     * \sa execAsync(), execBatchAsync()
+     */
     void resultsReady(bool success);
+    
+    /*!
+     * \brief emitted when the MSqlQuery instance toggles its busy state
+     * 
+     * \param isBusy true if the instance is entering busy state, false
+     *        otherwise.
+     * 
+     * \sa isBusy()
+     */
     void busyToggled(bool isBusy);
 private:
     Q_INVOKABLE void workerFinished(int queryId, bool success);

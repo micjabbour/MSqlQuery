@@ -47,14 +47,18 @@ void MSqlQuery::execAsync(const QString &query) {
 void MSqlQuery::execAsync()
 {
     w->execAsync(++currentQueryId);
-    m_isBusy = true;
-    emit busyToggled(true);
+    if(!m_isBusy) {
+        m_isBusy = true;
+        emit busyToggled(true);
+    }
 }
 
 void MSqlQuery::execBatchAsync(QSqlQuery::BatchExecutionMode mode) {
     w->execAsync(++currentQueryId, true, mode);
-    m_isBusy = true;
-    emit busyToggled(true);
+    if(!m_isBusy) {
+        m_isBusy = true;
+        emit busyToggled(true);
+    }
 }
 
 bool MSqlQuery::exec(const QString &query) {
@@ -253,6 +257,7 @@ void MSqlQueryWorker::execNextQuery() {
         m_isBusy = false;
     }
     locker.unlock();
+    q->clear();
     emit resultsReady(currentQuery.queryId, result);
 }
 
