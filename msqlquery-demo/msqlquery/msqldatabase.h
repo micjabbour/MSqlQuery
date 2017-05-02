@@ -16,8 +16,8 @@ class MSqlThread;
  * be used from MSqlQuery. If you don't pass the connection name argument,
  * MSqlQuery's default connection is assumed (this is different from QSqlQuery's
  * default connection). The following snippet shows how to create and open a
- * default MSqlQuery connection to a PostgreSQL database (same as QSqlDatabase
- * example):
+ * default MSqlQuery connection to a PostgreSQL database (similar to the
+ * QSqlDatabase example):
  *
  *     MSqlDatabase db = MSqlDatabase::addDatabase("QPSQL");
  *     db.setHostName("acidalia");
@@ -346,7 +346,7 @@ public:
      */
     bool unsubscribeFromNotification(const QString& name);
     /*!
-     * \brief Similar to QSqlDatabase()::driver().
+     * \brief Similar to QSqlDatabase::driver().
      *
      * \warning The function returns a QSqlDriver object. Do not call any
      *          functions on the returned object. You can only connect to

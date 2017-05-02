@@ -80,6 +80,14 @@ QSqlRecord MSqlQuery::record() const {
     return w->record();
 }
 
+QVariant MSqlQuery::value(int index) const {
+    return w->record().value(index);
+}
+
+QVariant MSqlQuery::value(const QString &name) const {
+    return w->record().value(name);
+}
+
 QSqlError MSqlQuery::lastError() const {
     return w->lastError();
 }

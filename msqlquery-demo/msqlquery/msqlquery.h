@@ -14,18 +14,18 @@ class MSqlQueryWorker;
 //use execAsync() and connect to resultsReady() signal instead
 
 /*!
- * \brief The MSqlQuery class provides means of executing single SQL statement
+ * \brief The MSqlQuery class provides means of executing a single SQL statement
  *        synchronously or asynchronously.
  *
- * The class provides a subset of the interface of QSqlQuery, in addition to the
- * asynchronous functions. It can be used to execute any kind of SQL statement
- * on a database and get results synchronously or asynchronously. Most of the
- * functions in the class are just wrappers that call corresponding Qt functions
- * in the right thread.
+ * The class provides a subset of the interface of QSqlQuery, in addition to
+ * some asynchronous functions. It can be used to execute any kind of SQL
+ * statement on a database and get results synchronously or asynchronously. Most
+ * of the functions in the class are just wrappers that call corresponding Qt
+ * functions in the "right" thread.
  *
  * The class has a synchronous API, that can be used in the same way QSqlQuery
  * is used. The following snippet shows how to execute an SQL query and retrieve
- * results synchronously using MSqlQuery (same as QSqlQuery example):
+ * results synchronously using MSqlQuery (similar to the QSqlQuery example):
  *
  *     MSqlQuery query("SELECT country FROM artist");
  *     while (query.next()) {
@@ -195,7 +195,19 @@ public:
      *          in some situations, but it is by design (in order to make
      *          functions like this fully  asynchronous).
      */
-    QSqlRecord record() const; //TODO: add value() function
+    QSqlRecord record() const;
+    /*!
+     * \brief value
+     * \param index
+     * \return 
+     */
+    QVariant value(int index) const;
+    /*!
+     * \brief value
+     * \param name
+     * \return 
+     */
+    QVariant value(const QString& name) const;
     /*!
      * \brief lastError
      * \return
