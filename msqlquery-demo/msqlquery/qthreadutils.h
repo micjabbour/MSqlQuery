@@ -25,12 +25,15 @@ void PostToWorker(QObject* worker, Func&& f, Qt::ConnectionType connectionType =
 
 //The function executes a functor in a specified worker's thread
 //it waits for the functor to finish, and returns its result to the caller in the current thread
-template <typename Func> //for functors returning non-void
-typename std::enable_if<!std::is_void<typename FunctorTraits<Func>::return_t>::value, typename FunctorTraits<Func>::return_t>::type
-CallByWorker(QObject* worker, Func&& f) {
+template <typename Func,
+          typename RetType = typename FunctorTraits<Func>::return_t,
+          typename = typename std::enable_if<!std::is_void<RetType>::value,
+                                             RetType>::type
+          > //for functors returning non-void
+RetType CallByWorker(QObject* worker, Func&& f) {
     Qt::ConnectionType blockingConnectionType = QThread::currentThread() == worker->thread() ?
                 Qt::DirectConnection : Qt::BlockingQueuedConnection;
-    typename FunctorTraits<Func>::return_t returnValue;
+    RetType returnValue;
     auto myFunctor = [&]{
         returnValue= std::forward<Func>(f)();
     };
@@ -38,9 +41,12 @@ CallByWorker(QObject* worker, Func&& f) {
     return returnValue;
 }
 //if the functor returns void, no need to use a custom functor like above
-template <typename Func> //for functors returning void
-typename std::enable_if<std::is_void<typename FunctorTraits<Func>::return_t>::value, void>::type
-CallByWorker(QObject* worker, Func&& f) {
+template <typename Func,
+          typename RetType = typename FunctorTraits<Func>::return_t,
+          typename = typename std::enable_if<std::is_void<RetType>::value,
+                                             RetType>::type
+          > //for functors returning void
+void CallByWorker(QObject* worker, Func&& f) {
     Qt::ConnectionType blockingConnectionType = QThread::currentThread() == worker->thread() ?
                 Qt::DirectConnection : Qt::BlockingQueuedConnection;
     PostToWorker(worker, std::forward<Func>(f), blockingConnectionType);

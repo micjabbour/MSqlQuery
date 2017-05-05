@@ -8,12 +8,9 @@
 MSqlQuery::MSqlQuery(QObject *parent, MSqlDatabase db)
     : QObject(parent), db(db) {
     w= new MSqlQueryWorker();
-    //connect func from worker to this instance's signal
-    //this will make the signal get emitted from the MSqlQuery thread (instead of the worker thread)
+    //connect signal from worker to the MSqlQuery's private slot
     connect(w, &MSqlQueryWorker::resultsReady, this, &MSqlQuery::workerFinished);
     w->moveToThread(MSqlDatabase::threadForConnection(db.connectionName()));
-    //guarantee destruction of worker even when its life time does not end before thread destruction
-    connect(MSqlDatabase::threadForConnection(db.connectionName()), &MSqlThread::finished, w, &QObject::deleteLater);
     auto w= this->w; //in order to capture w by value
     //   ^^^^^^^^^^ is there a better way to do this without using c++14 initializing capture??
     PostToWorker(w, [=]{

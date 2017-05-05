@@ -24,7 +24,7 @@ int MSqlQueryModel::columnCount(const QModelIndex &parent) const {
 QVariant MSqlQueryModel::data(const QModelIndex &index, int role) const {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
         return m_records.at(index.row()).value(index.column());
-
+    
     return QVariant();
 }
 

@@ -34,7 +34,7 @@ class MSqlQueryWorker;
  *     }
  *
  * The class also has an asynchronous API, that can be used to execute a query
- * asynchronously. It works by calling functions that end with `Async()` (e.g.
+ * asynchronously. You can call functions that end with `Async()` (e.g.
  * execAsync(), execBatchAsync()). These functions emit a signal resultsReady()
  * when execution is finished. You can connect to this signal, and access the
  * results the same way as when using the synchronous API. Here is the same
@@ -59,6 +59,13 @@ class MSqlQueryWorker;
  * The class also supports using QSqlQuery's batch execution mode. This can be
  * done using the functions execBatch() (for synchronous execution) and
  * execBatchAsync() (for asynchronous execution)
+ * 
+ * \note There is no concept of an "active" query in MSqlQuery. All exec
+ * functions in the class (whether they are synchronous or asynchronous)
+ * retrieve all results of a query and caches them to avoid blocking while
+ * trying to retrieve them later. This can be less efficient in cases where the
+ * query returns a large amount of data, but should be okay when you are not
+ * blocking the GUI thread.
  */
 class MSqlQuery : public QObject {
     Q_OBJECT
