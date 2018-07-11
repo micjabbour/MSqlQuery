@@ -17,7 +17,7 @@ QueryDemoWidget::~QueryDemoWidget() {
 void QueryDemoWidget::on_pbExecAsync_clicked() {
     ui->teResults->clear(); //clear old results text
     m_stopWatch.start(); //start stopWatch
-    
+
     m_query->execAsync(ui->leQuery->text());
 }
 
@@ -44,6 +44,7 @@ void QueryDemoWidget::showResults(bool success) {
             recordStr.append("\n");
             ui->teResults->append(recordStr);
         }
+        ui->teResults->append(QString("\nNumber of rows affected: %0").arg(m_query->numRowsAffected()));
     } else {
         ui->teResults->setTextColor(QColor(Qt::red));
         ui->teResults->append(QString("Got error in %0 msecs.\n\n").arg(m_stopWatch.elapsed()));

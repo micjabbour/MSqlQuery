@@ -305,6 +305,15 @@ public:
      * \note The function is fully asynchronous
      */
     QVariant lastInsertId()const;
+    
+    /*!
+     * \brief Similar to QSqlQuery::numRowsAffected
+     * 
+     * \return count of rows affected by last query.
+     * 
+     * \note The function is fully asynchronous
+     */
+    int numRowsAffected()const;
 
     //additional functions
     /*!
@@ -385,6 +394,7 @@ public:
     bool seek(int index);
     QSqlRecord record() const;
     QVariant lastInsertId() const;
+    int numRowsAffected() const;
     QSqlError lastError() const;
     void setNextQueryReady(bool isReady, bool isBatch = false, QSqlQuery::BatchExecutionMode batchMode = QSqlQuery::ValuesAsRows);
     bool isBusy() const;
@@ -412,6 +422,7 @@ private:
     bool m_isBusy = false;
     QSqlError m_lastError;
     QVariant m_lastInsertId; //to store query last insert id
+    int m_numRowsAffected; //to store count of affected rows
 };
 
 #endif // MSQLQUERY_H
