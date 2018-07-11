@@ -102,6 +102,11 @@ QVariant MSqlQuery::lastInsertId() const {
     return w->lastInsertId();
 }
 
+int MSqlQuery::numRowsAffected() const
+{
+    return w->numRowsAffected();
+}
+
 bool MSqlQuery::isBusy() const {
     return m_isBusy;
 }
@@ -205,6 +210,12 @@ QVariant MSqlQueryWorker::lastInsertId() const {
     return m_lastInsertId;
 }
 
+int MSqlQueryWorker::numRowsAffected() const
+{
+    QMutexLocker locker(&mutex);
+    return m_numRowsAffected;
+}
+
 QSqlError MSqlQueryWorker::lastError() const {
     QMutexLocker locker(&mutex);
     return m_lastError;
@@ -243,6 +254,7 @@ void MSqlQueryWorker::execNextQuery() {
         while(q->next()) m_records.append(q->record());
         m_currentItem = -1; //before first item
         m_lastInsertId = q->lastInsertId();
+        m_numRowsAffected = q->numRowsAffected();
         m_lastError = QSqlError();
         m_isBusy = false;
     } else {
@@ -250,6 +262,7 @@ void MSqlQueryWorker::execNextQuery() {
         m_records.clear();
         m_currentItem = -1; //before first item
         m_lastInsertId = QVariant();
+        m_numRowsAffected = 0;
         m_lastError= q->lastError();
         m_isBusy = false;
     }
