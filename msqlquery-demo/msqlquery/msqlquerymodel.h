@@ -111,7 +111,9 @@ public:
 
     //! Stops current async model executing
     void stop();
-    
+signals:
+    //! Emits after all model data fetched from query
+    void resultsReady(bool success);
 private slots:
     void queryGotResults(bool success);
 private:

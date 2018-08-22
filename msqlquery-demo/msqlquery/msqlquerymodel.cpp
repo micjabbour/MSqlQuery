@@ -86,6 +86,7 @@ void MSqlQueryModel::queryGotResults(bool success){
     } else {
         qCritical("MSqlQueryModel::queryGotResults success is false");
     }
+    emit resultsReady(success);
 }
 
 bool MSqlQueryModel::isBusy()const{
