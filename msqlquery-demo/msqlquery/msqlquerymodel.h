@@ -114,7 +114,11 @@ public:
     //! the model will not show any of the newly retrieved data after calling
     //! this method.
     void abort();
-    
+
+signals:
+    //! Emits in tandem with the resultsReady signal of the underlying MSqlQuery
+    //! (i.e. when the asynchronous SQL query is executed successfully).
+    void resultsReady(bool success);
 private slots:
     void queryGotResults(bool success);
 private:

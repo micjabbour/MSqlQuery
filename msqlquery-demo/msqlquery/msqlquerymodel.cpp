@@ -75,6 +75,7 @@ void MSqlQueryModel::setQueryAsync(const QString &query, const QString &dbConnec
     m_query = new MSqlQuery(this, MSqlDatabase::database(dbConnectionName));
     m_query->execAsync(query);
     connect(m_query, &MSqlQuery::resultsReady, this, &MSqlQueryModel::queryGotResults);
+    connect(m_query, &MSqlQuery::resultsReady, this, &MSqlQueryModel::resultsReady);
 }
 
 void MSqlQueryModel::queryGotResults(bool success){
