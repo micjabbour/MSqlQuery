@@ -64,6 +64,12 @@ void MSqlQueryModel::setQuery(const QString &query, const QString &dbConnectionN
     queryGotResults(success);
 }
 
+void MSqlQueryModel::abort()
+{
+    delete m_query;
+    m_query = nullptr;
+}
+
 void MSqlQueryModel::setQueryAsync(const QString &query, const QString &dbConnectionName){
     delete m_query; //delete old m_query
     m_query = new MSqlQuery(this, MSqlDatabase::database(dbConnectionName));

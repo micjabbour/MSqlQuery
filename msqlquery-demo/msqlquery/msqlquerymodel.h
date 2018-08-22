@@ -108,6 +108,12 @@ public:
     //! This function does basically the same thing done by QSqlQueryModel::setQuery.
     //! It just calls QSqlQueryModel::setQuery from the other thread. and blocks until the query finishes.
     void setQuery(const QString& query,  const QString& dbConnectionName = MSqlDatabase::defaultConnectionName);
+
+    //! Aborts the current background operation in the model (if any).
+    //! Please note that the SQL operation might continue in the background but
+    //! the model will not show any of the newly retrieved data after calling
+    //! this method.
+    void abort();
     
 private slots:
     void queryGotResults(bool success);
